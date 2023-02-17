@@ -13,7 +13,7 @@ A toolkit to harmonize and filter structural variations across methods and sampl
 git clone https://github.com/Han-Cao/HarmoniSV.git
 ```
 ## Dependencies
-HarmoniSV is written by python3.8. The following python modules are required:
+HarmoniSV is written in python3.8. The following python modules are required:
 ```
 pysam
 pandas
