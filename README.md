@@ -1,7 +1,12 @@
 # HarmoniSV
 A toolkit to harmonize and filter structural variations across methods and samples.
 
-**Important**: This tool is under development and lack of detailed documentation. Please open an issue for questions or bug report.
+**Important**: This tool is under development and lack of detailed documentation. We have tested HarmoniSV to perform population-scale SV calling using SV calls from `Sniffles2`, `cuteSV`, and `SVIM`. It should be able to work with any SV callers whose output follows VCF specification. Please open an issue for questions or bug reports.
+
+## Features
+- Harmonize population-scale SV calling and force-calling results from any SV callers
+- Machine learning SV filter to balance accuracy and sensitivity
+- Fast VCF manipulation, annotation, and conversion via `pysam`
 
 ## Installation
 ``` bash
