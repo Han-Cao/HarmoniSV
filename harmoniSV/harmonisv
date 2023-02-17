@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+
+# HarmoniSV
+# A toolkit to harmonize and filter structural variations across methods and samples
+#
+# Created: 3/1/2023
+# Author: Han Cao
+# Contact: hcaoad@connect.ust.hk
+
+VERSION = "0.1.0"
+
+import argparse
+import logging
+import sys
+
+from harmonizeVCF import harmonizeVCF_main
+from representSV import representSV_main
+from genotypeSV import genotypeSV_main
+from filterSV import filterSV_main
+from sample2pop import sample2pop_main
+from intersectSV import intersectSV_main
+from concordanceVCF import concordanceVCF_main
+from harmonizeHeader import harmonizeHeader_main
+
+COMMANDS = {'harmonize': harmonizeVCF_main,
+            'harmonize-header': harmonizeHeader_main,
+            'represent': representSV_main,
+            'genotype': genotypeSV_main,
+            'filter': filterSV_main,
+            'sample2pop': sample2pop_main,
+            'intersect': intersectSV_main,
+            'concordance': concordanceVCF_main}
+
+
+USAGE = f"""
+HarmoniSV: A toolkit to harmonize and filter structural variantions across methods and samples
+Version: {VERSION}
+
+Usage: harmonisv <command> [options]
+
+Commands:
+
+ -- VCF manipulation
+    harmonize          Harmonize SV VCFs from across samples and SV calling methods
+    harmonize-header   Harmonize VCF headers
+    sample2pop         Convert single-sample VCF to multi-sample VCF
+    intersect          Intersect SVs with genomic features
+
+ -- Analysis on SV callset
+    represent          Select the representative SV from merged SVs
+    genotype           Genotype SVs across SV genotyping methods
+    filter             Random forest filter for SVs
+    concordance        Calculate genotype concordance between two VCFs
+
+
+Note:
+    1. All input VCFs MUST follow the VCF specification
+    2. HarmoniSV assume specific variant ID format to index SVs from different methods and samples, 
+       please check the required ID format of different commands before you use
+    3. The input/output VCF format (i.e., vcf, vcf.gz, bcf) will be automatically detected
+
+For help on a specific command, run:
+    harmonisv <command> -h
+"""
+
+
+
+def main():
+    """Main function"""
+
+    parser = argparse.ArgumentParser(description=USAGE, 
+                                     formatter_class=argparse.RawDescriptionHelpFormatter, 
+                                     usage=argparse.SUPPRESS)
+
+    parser.add_argument("command", metavar="command", choices=COMMANDS.keys(), type=str, default=None,
+                        help="Command to execute")
+    parser.add_argument("options", metavar="options", nargs=argparse.REMAINDER,
+                        help="Options to pass to the command")
+    
+    if len(sys.argv) == 1:
+        print(USAGE, file=sys.stderr) 
+        sys.exit(1)
+    
+    args = parser.parse_args()
+
+    logging.basicConfig(level=logging.INFO,
+                    format='[%(asctime)s] - [%(levelname)s]: %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+
+    COMMANDS[args.command](args.options)
+
+
+if __name__ == "__main__":
+    main()
