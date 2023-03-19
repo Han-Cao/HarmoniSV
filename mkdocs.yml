@@ -1,0 +1,29 @@
+site_name: HarmoniSV
+site_url: https://han-cao.github.io/HarmoniSV/
+repo_url: https://github.com/Han-Cao/HarmoniSV/
+edit_uri: docs/
+
+theme:
+    name: readthedocs
+
+extra:
+    version: 0.1.0
+
+markdown_extensions:
+  - def_list
+
+nav:
+    - 'Introduction': 'index.md'
+    - 'Quick start': 'quick_start.md'
+    - 'Tutorial': 'tutorial.md'
+    - 'Command list': 'command_list.md'
+    - 'VCF manipulation':
+        - 'harmonize': 'VCF_manipulation/harmonize.md'
+        - 'harmonize-header': 'VCF_manipulation/harmonize_header.md'
+        - 'sample2pop': 'VCF_manipulation/sample2pop.md'
+        - 'intersect': 'VCF_manipulation/intersect.md'
+    - 'SV analysis':
+        - 'represent': 'SV_analysis/represent.md'
+        - 'genotype': 'SV_analysis/genotype.md'
+        - 'filter': 'SV_analysis/filter.md'
+        - 'concordance': 'SV_analysis/concordance.md'
