@@ -9,6 +9,9 @@ theme:
 extra:
     version: 0.1.0
 
+extra_css:
+    - css/custom.css
+
 markdown_extensions:
   - def_list
 
