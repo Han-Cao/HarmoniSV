@@ -159,12 +159,12 @@ def vcf_to_pyranges(vcf: pysam.VariantFile) -> pr.PyRanges:
 
 def parse_cmdargs(parser: argparse.ArgumentParser, cmdargs: list) -> argparse.Namespace:
     """Parse arguments"""
-    logger = logging.getLogger(__name__)
+
     if len(cmdargs) == 0:
         parser.print_help(sys.stderr)
         sys.exit(1)
 
     args = parser.parse_args(cmdargs)
     # print arguments
-    logger.info(f'Command: {parser.prog} {" ".join(cmdargs)}' )
+    print(f'Command: {parser.prog} {" ".join(cmdargs)}\n')
     return args
