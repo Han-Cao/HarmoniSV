@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # test run of harmoniSV
-harmonisv="../harmoniSV/harmonisv"
+harmonisv="../src/harmoniSV/harmonisv"
+chmod +x $harmonisv
 
 # harmonize headers from list of input vcf files
 dir_header="output/harmonize_header"
