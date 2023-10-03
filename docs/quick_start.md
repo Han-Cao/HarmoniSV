@@ -5,6 +5,8 @@
 ## Installation
 ``` bash
 git clone https://github.com/Han-Cao/HarmoniSV.git
+cd HarmoniSV/src/harmoniSV
+chmod +x harmonisv
 ```
 ## Dependencies
 HarmoniSV is written in python3.8. The following python modules are required:
@@ -18,9 +20,8 @@ pyranges
 ```
 
 ## Usage
-Go to the harmoniSV directory and run `harmonisv`:
+Go to the src/harmoniSV directory and run `harmonisv`:
 ``` bash
-cd harmoniSV
 ./harmonisv
 
 HarmoniSV: A toolkit to harmonize and filter structural variantions across methods and samples
