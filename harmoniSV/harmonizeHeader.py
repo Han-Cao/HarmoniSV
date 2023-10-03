@@ -16,15 +16,15 @@ parser = argparse.ArgumentParser(prog="harmonisv harmonize-header",
                                  add_help=False)
 
 io_arg = parser.add_argument_group("Input/Output arguments")
-io_arg.add_argument("-i", "--invcf", required=False, type=str,
+io_arg.add_argument("-i", "--invcf", required=False, type=str, metavar="VCF",
                     help="Comma-separated list of input VCF files. Duplicate headers will use the first one, including SAMPLE header. For multi-sample VCF, please make sure all input VCFs have the same SAMPLE order.")
-io_arg.add_argument("-f", "--file-list", required=False, type=str,
+io_arg.add_argument("-f", "--file-list", required=False, type=str, metavar="FILE_LIST",
                     help="File containing a list of input VCF files, one VCF per line. VCFs from both -i and -f will be used.")
-io_arg.add_argument("-o", "--output", required=True, type=str,
+io_arg.add_argument("-o", "--output", required=True, type=str, metavar="OUTPUT",
                     help="Output VCF header file")
 
 optional = parser.add_argument_group("optional arguments")
-optional.add_argument("-r", "--ref-vcf", required=False, type=str,
+optional.add_argument("-r", "--ref-vcf", required=False, type=str, metavar="VCF",
                       help="Reference VCF file, highest priority for duplicate headers")
 optional.add_argument("-h", "--help", action="help", help="Show this help message and exit")
 
