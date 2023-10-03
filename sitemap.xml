@@ -2,27 +2,32 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://han-cao.github.io/HarmoniSV/</loc>
-         <lastmod>2023-03-19</lastmod>
+         <lastmod>2023-10-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://han-cao.github.io/HarmoniSV/command_list/</loc>
-         <lastmod>2023-03-19</lastmod>
+         <lastmod>2023-10-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://han-cao.github.io/HarmoniSV/quick_start/</loc>
-         <lastmod>2023-03-19</lastmod>
+         <lastmod>2023-10-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://han-cao.github.io/HarmoniSV/tutorial/</loc>
-         <lastmod>2023-03-19</lastmod>
+         <lastmod>2023-10-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://han-cao.github.io/HarmoniSV/VCF_manipulation/harmonize/</loc>
-         <lastmod>2023-03-19</lastmod>
+         <lastmod>2023-10-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://han-cao.github.io/HarmoniSV/VCF_manipulation/harmonize_header/</loc>
+         <lastmod>2023-10-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>

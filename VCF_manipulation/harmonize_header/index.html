@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://han-cao.github.io/HarmoniSV/VCF_manipulation/harmonize/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://han-cao.github.io/HarmoniSV/VCF_manipulation/harmonize_header/" />
       <link rel="shortcut icon" href="../../img/favicon.ico" />
-    <title>harmonize - HarmoniSV</title>
+    <title>harmonize-header - HarmoniSV</title>
     <link rel="stylesheet" href="../../css/theme.css" />
     <link rel="stylesheet" href="../../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
@@ -13,9 +13,9 @@
     
       <script>
         // Current page data
-        var mkdocs_page_name = "harmonize";
-        var mkdocs_page_input_path = "VCF_manipulation/harmonize.md";
-        var mkdocs_page_url = "/HarmoniSV/VCF_manipulation/harmonize/";
+        var mkdocs_page_name = "harmonize-header";
+        var mkdocs_page_input_path = "VCF_manipulation/harmonize_header.md";
+        var mkdocs_page_url = "/HarmoniSV/VCF_manipulation/harmonize_header/";
       </script>
     
     <script src="../../js/jquery-3.6.0.min.js" defer></script>
@@ -62,7 +62,9 @@
               </ul>
               <p class="caption"><span class="caption-text">VCF manipulation</span></p>
               <ul class="current">
-                  <li class="toctree-l1 current"><a class="reference internal current" href="./">harmonize</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../harmonize/">harmonize</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">harmonize-header</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#input">Input</a>
     </li>
@@ -71,22 +73,16 @@
     <li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#example-1-harmonize-sniffles2-ver-206-output">Example 1: Harmonize sniffles2 (ver 2.0.6) output</a>
-    </li>
-        </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#arguments">Arguments</a>
         <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#required-arguments">Required arguments</a>
+    <li class="toctree-l3"><a class="reference internal" href="#inputoutput-arguments">Input/Output arguments:</a>
     </li>
-    <li class="toctree-l3"><a class="reference internal" href="#optional-arguments">Optional arguments</a>
+    <li class="toctree-l3"><a class="reference internal" href="#optional-arguments">optional arguments:</a>
     </li>
         </ul>
     </li>
     </ul>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../harmonize_header/">harmonize-header</a>
                   </li>
                   <li class="toctree-l1"><a class="" href="../sample2pop.md">sample2pop</a>
                   </li>
@@ -119,9 +115,9 @@
   <ul class="wy-breadcrumbs">
     <li><a href="../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
           <li>VCF manipulation &raquo;</li>
-      <li>harmonize</li>
+      <li>harmonize-header</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/Han-Cao/HarmoniSV/docs/VCF_manipulation/harmonize.md" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/Han-Cao/HarmoniSV/docs/VCF_manipulation/harmonize_header.md" class="icon icon-github"> Edit on GitHub</a>
     </li>
   </ul>
   <hr/>
@@ -129,9 +125,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="harmonize"><em>harmonize</em></h1>
-<p>Harmonize SV VCFs across samples and SV calling methods</p>
-<p><strong><em> Last updated: 2023-03-19 </em></strong></p>
+                <h1 id="harmonize-header"><em>harmonize-header</em></h1>
+<p>Harmonize VCF headers</p>
+<p><strong><em> Last updated: 2023-10-03 </em></strong></p>
 <h2 id="input">Input</h2>
 <ul>
 <li><strong>VCF</strong>: any VCF/BCF files following the VCF specification.</li>
@@ -139,67 +135,78 @@
 </ul>
 <h2 id="output">Output</h2>
 <ul>
-<li><strong>VCF</strong>: VCF/BCF files following the VCF specification.</li>
-<li><strong>ID format</strong>: <code>{PREFIX}.{SVTYPE}.{NUMBER}</code> if <code>--rename-id --id-prefix PREFIX</code> is specified, otherwise the same as input.</li>
-<li></li>
+<li><strong>VCF header</strong>: harmonized VCF header containing all header records of input VCFs</li>
 </ul>
 <h2 id="usage">Usage</h2>
-<pre><code class="language-bash">harmonisv harmonize [options] -i &lt;input_vcf&gt; -o &lt;output_vcf&gt; 
+<pre><code class="language-bash">harmonisv harmonize-header [options] -i &lt;input_vcf&gt; -o &lt;output_header&gt; 
 </code></pre>
 <h2 id="examples">Examples</h2>
-<h6 id="example-1-harmonize-sniffles2-ver-206-output">Example 1: Harmonize sniffles2 (ver 2.0.6) output</h6>
-<p>Output VCF of <code>Sniffles2</code> store SV information (e.g., SVTYPE, SVLEN) in the INFO field, and the read depth of reference (DR) and variant (DV) alleles in the FORMAT field. The following command keep basic SV information and extract read depths to INFO fields.</p>
-<pre><code class="language-bash">harmonisv harmonize \
--i input.vcf.gz \                           # input VCF
--o output.vcf.gz \                          # output VCF
---info SVTYPE,SVLEN,END,STRANDS=STRAND \    # INFO fields to be kept, rename STRAND to STRANDS
---format-to-info DP=DR,DP=DV,RE=DV \        # Extract FORMAT fields to INFO fields
---sum \                                     # Sum all values assigned to the same key (DP = DR + DV)
---header header.txt \                       # New VCF header, please define new keys here (i.e., DP, RE)
---rename-id \                               # rename ID to {PREFIX}.{SVTYPE}.{NUMBER}
---id-prefix HG002.minimap2.sniffles2        # {SAMPLE}.{ALIGNER}.{CALLER}
+<p>The VCF headers from cuteSV, sniffles, and svim are harmonized. If one header occurs in more than one VCF, the priority is: sniffles &gt; cuteSV &gt; svim.</p>
+<pre><code class="language-bash">harmonisv harmonize-header \
+-i HG002.minimap2.cuteSV.vcf,HG002.minimap2.sniffles.vcf,HG002.minimap2.svim.vcf \
+-o harmonized_header.txt \
+-r HG002.minimap2.sniffles.vcf # reference VCF has the highest priority
+</code></pre>
+<p>Input:</p>
+<pre><code class="language-bash">HG002.minimap2.cuteSV.vcf:
+##fileformat=VCFv4.2
+##INFO=&lt;ID=PRECISE,Number=0,Type=Flag,Description=&quot;Precise structural variant&quot;&gt;
+##INFO=&lt;ID=IMPRECISE,Number=0,Type=Flag,Description=&quot;Imprecise structural variant&quot;&gt;
+##INFO=&lt;ID=SVTYPE,Number=1,Type=String,Description=&quot;Type of structural variant&quot;&gt;
+##INFO=&lt;ID=SVLEN,Number=1,Type=Integer,Description=&quot;Difference in length between REF and ALT alleles&quot;&gt;
+#CHROM  POS ID  REF ALT QUAL    FILTER  INFO    FORMAT  NULL
+
+HG002.minimap2.sniffles.vcf:
+##fileformat=VCFv4.2
+##INFO=&lt;ID=PRECISE,Number=0,Type=Flag,Description=&quot;Structural variation with precise breakpoints&quot;&gt;
+##INFO=&lt;ID=IMPRECISE,Number=0,Type=Flag,Description=&quot;Structural variation with imprecise breakpoints&quot;&gt;
+##INFO=&lt;ID=SVLEN,Number=1,Type=Integer,Description=&quot;Length of structural variation&quot;&gt;
+##INFO=&lt;ID=SVTYPE,Number=1,Type=String,Description=&quot;Type of structural variation&quot;&gt;
+##INFO=&lt;ID=STDEV_POS,Number=1,Type=Float,Description=&quot;Standard deviation of structural variation start position&quot;&gt;
+##INFO=&lt;ID=STDEV_LEN,Number=1,Type=Float,Description=&quot;Standard deviation of structural variation length&quot;&gt;
+#CHROM  POS ID  REF ALT QUAL    FILTER  INFO    FORMAT  SAMPLE
+
+HG002.minimap2.svim.vcf:
+##fileformat=VCFv4.2
+##INFO=&lt;ID=SVTYPE,Number=1,Type=String,Description=&quot;Type of structural variant&quot;&gt;
+##INFO=&lt;ID=SVLEN,Number=1,Type=Integer,Description=&quot;Difference in length between REF and ALT alleles&quot;&gt;
+##INFO=&lt;ID=STD_SPAN,Number=1,Type=Float,Description=&quot;Standard deviation in span of merged SV signatures&quot;&gt;
+##INFO=&lt;ID=STD_POS,Number=1,Type=Float,Description=&quot;Standard deviation in position of merged SV signatures&quot;&gt;
+#CHROM  POS ID  REF ALT QUAL    FILTER  INFO    FORMAT  Sample
+</code></pre>
+<p>Output:</p>
+<p><code>PRECISE</code>, <code>IMPRECISE</code>, <code>SVLEN</code>, <code>SVTYPE</code> are defined in multiple VCFs, and the output use the definition in sniffles as it has the highest priority. <code>STDEV_POS</code>, <code>STDEV_LEN</code>, <code>STD_SPAN</code>, <code>STD_POS</code> are defined in single VCF and are appended to the output header.</p>
+<pre><code class="language-bash">##fileformat=VCFv4.2
+##INFO=&lt;ID=PRECISE,Number=0,Type=Flag,Description=&quot;Structural variation with precise breakpoints&quot;&gt;
+##INFO=&lt;ID=IMPRECISE,Number=0,Type=Flag,Description=&quot;Structural variation with imprecise breakpoints&quot;&gt;
+##INFO=&lt;ID=SVLEN,Number=1,Type=Integer,Description=&quot;Length of structural variation&quot;&gt;
+##INFO=&lt;ID=SVTYPE,Number=1,Type=String,Description=&quot;Type of structural variation&quot;&gt;
+##INFO=&lt;ID=STDEV_POS,Number=1,Type=Float,Description=&quot;Standard deviation of structural variation start position&quot;&gt;
+##INFO=&lt;ID=STDEV_LEN,Number=1,Type=Float,Description=&quot;Standard deviation of structural variation length&quot;&gt;
+##INFO=&lt;ID=STD_SPAN,Number=1,Type=Float,Description=&quot;Standard deviation in span of merged SV signatures&quot;&gt;
+##INFO=&lt;ID=STD_POS,Number=1,Type=Float,Description=&quot;Standard deviation in position of merged SV signatures&quot;&gt;
+#CHROM  POS ID  REF ALT QUAL    FILTER  INFO    FORMAT  SAMPLE
 </code></pre>
 <h2 id="arguments">Arguments</h2>
-<h5 id="required-arguments">Required arguments</h5>
+<h5 id="inputoutput-arguments">Input/Output arguments:</h5>
 <dl>
-<dt>-i, --invcf <em>vcf</em></dt>
-<dd>input vcf</dd>
-<dt>-o, --outvcf <em>vcf</em></dt>
-<dd>output vcf</dd>
+<dt>-i, --invcf <em>VCF</em></dt>
+<dd>Comma-separated list of input VCF files. Duplicate headers will use the first one, including SAMPLE header. For multi-sample VCF, please make sure all input VCFs have the same SAMPLE order.</dd>
+<dt>-f, --file-list <em>FILE_LIST</em></dt>
+<dd>File containing a list of input VCF files, one VCF per line. VCFs from both -i and -f will be used.</dd>
+<dt>-o, --output <em>OUTPUT</em></dt>
+<dd>Output VCF header file</dd>
 </dl>
-<h5 id="optional-arguments">Optional arguments</h5>
+<h5 id="optional-arguments">optional arguments:</h5>
 <dl>
-<dt>--info TAG</dt>
-<dd>Comma separated INFO tags to extract, can rename tag by NEW=OLD. Can give multiple candidate old tags for 1 new tag, priority from high to low. E.g., 'NEW=OLD1,NEW=OLD2' means if OLD1 is present, use OLD1, otherwise use OLD2.</dd>
-<dt>--info-to-alt TAG</dt>
-<dd>Comma separated INFO tags to fill in ALT, from high prioirty to low priority. This is useful for insertion sequence stored in INFO.</dd>
-<dt>--format-to-info TAG</dt>
-<dd>Comma separated FORMAT tags to be sum and add in INFO, from high prioirty to low priority. New headers must given by --header.</dd>
-<dt>--sum</dt>
-<dd>Change merge logic to sum, all tags must exist for all records. E.g., '--format-to-info DP=DR,DP=DV --sum' means 'INFO/DP = sum(FORMAT/DR + FORMAT/DV)'</dd>
-<dt>--header FILE</dt>
-<dd>New vcf header file to replace the header of invcf</dd>
-<dt>--header-str string</dt>
-<dd>Semicolon separated INFO header string added to new header (metadata separated by comma). e.g., 'DP,1,Integar,Sequencing depth;AF,1,Float,Allele frequency'</dd>
-<dt>--id-prefix PREFIX</dt>
-<dd>Rename SV ID to PREFIX.raw_ID. Final ID should be Sample.Aligner.Caller.unique_id for downstream analysis</dd>
-<dt>--rename-id</dt>
-<dd>Rename SV ID to PREFIX.SVTYPE.No., must use with --id-prefix</dd>
-<dt>--keep-old</dt>
-<dd>Keep raw INFO when rename, useful when merging (default: False)</dd>
-<dt>--keep-all</dt>
-<dd>Whether keep all INFO fields. If specified, only rename work in --info (default: False)</dd>
-<dt>--no-AC</dt>
-<dd>Disable automatically add AC to INFO (default: False)</dd>
-<dt>--no-check</dt>
-<dd>Disable vcf check and filter on ID, SVTYPE for downstream analysis (default: False)</dd>
+<dt>-r, --ref-vcf <em>VCF</em></dt>
+<dd>Reference VCF file, highest priority for duplicated headers</dd>
 </dl>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../../command_list/" class="btn btn-neutral float-left" title="Command list"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../harmonize_header/" class="btn btn-neutral float-right" title="harmonize-header">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../harmonize/" class="btn btn-neutral float-left" title="harmonize"><span class="icon icon-circle-arrow-left"></span> Previous</a>
     </div>
 
   <hr/>
@@ -226,10 +233,8 @@
         </span>
     
     
-      <span><a href="../../command_list/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../harmonize/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
-    
-      <span><a href="../harmonize_header/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>

@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../css/custom.css" rel="stylesheet" />
     
       <script>
         // Current page data
@@ -71,7 +72,7 @@
               <ul>
                   <li class="toctree-l1"><a class="reference internal" href="../VCF_manipulation/harmonize/">harmonize</a>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../VCF_manipulation/harmonize_header.md">harmonize-header</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../VCF_manipulation/harmonize_header/">harmonize-header</a>
                   </li>
                   <li class="toctree-l1"><a class="" href="../VCF_manipulation/sample2pop.md">sample2pop</a>
                   </li>
@@ -117,6 +118,8 @@
 <p><strong><em> Last updated: 2023-03-19 </em></strong></p>
 <h2 id="installation">Installation</h2>
 <pre><code class="language-bash">git clone https://github.com/Han-Cao/HarmoniSV.git
+cd HarmoniSV/src/harmoniSV
+chmod +x harmonisv
 </code></pre>
 <h2 id="dependencies">Dependencies</h2>
 <p>HarmoniSV is written in python3.8. The following python modules are required:</p>
@@ -128,9 +131,8 @@ scikit-learn
 pyranges
 </code></pre>
 <h2 id="usage">Usage</h2>
-<p>Go to the harmoniSV directory and run <code>harmonisv</code>:</p>
-<pre><code class="language-bash">cd harmoniSV
-./harmonisv
+<p>Go to the src/harmoniSV directory and run <code>harmonisv</code>:</p>
+<pre><code class="language-bash">./harmonisv
 
 HarmoniSV: A toolkit to harmonize and filter structural variantions across methods and samples
 Version: 0.1.0
