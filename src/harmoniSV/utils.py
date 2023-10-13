@@ -166,5 +166,5 @@ def parse_cmdargs(parser: argparse.ArgumentParser, cmdargs: list) -> argparse.Na
 
     args = parser.parse_args(cmdargs)
     # print arguments
-    print(f'Command: {parser.prog} {" ".join(cmdargs)}\n')
+    print(f'Command: {parser.prog} {" ".join(cmdargs)}', file=sys.stderr)
     return args
