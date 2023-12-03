@@ -11,7 +11,7 @@ import functools
 import logging
 import os
 
-from utils import read_vcf, IdGenerator, SVTYPE_ALLOW, parse_cmdargs
+from utils import read_vcf, IdGenerator, parse_cmdargs
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv harmonize",
@@ -26,19 +26,19 @@ required.add_argument("-o", "--outvcf", metavar="VCF", type=str, required=True,
 
 vcf_info_arg = parser.add_argument_group('VCF INFO manipulation')
 vcf_info_arg.add_argument("--info", metavar="TAG", type=str, required=False,
-                          help="Comma separated INFO tags to extract. INFO tags can be renamed by NEW=OLD, from high prioirty to low priority, e.g., 'NEW=OLD1,NEW=OLD2' means if OLD1 is present, use OLD1, otherwise use OLD2.")
+                          help="Comma separated INFO tags to extract or rename. INFO tags can be renamed by NEW=OLD, from high prioirty to low priority, e.g., 'NEW=OLD1,NEW=OLD2' means if OLD1 is present, use OLD1, otherwise use OLD2.")
 vcf_info_arg.add_argument("--info-sum", metavar="TAG", type=str, required=False,
-                          help="Comma separated INFO tags to extract and sum. Old tags with the same new tag name will be summed up, e.g., 'NEW=OLD1,NEW=OLD2' means 'INFO/NEW = INFO/OLD1 + INFO/OLD2'")
+                          help="Comma separated INFO tags to extract and sum. Old tags with the same new tag name will be summed up, e.g., 'NEW=OLD1,NEW=OLD2' means 'INFO/NEW = INFO/OLD1 + INFO/OLD2'. Please define the header of new tags in --header or --header-str")
 vcf_info_arg.add_argument("--format-to-info", metavar="TAG", type=str, required=False,
                           help="Comma separated FORMAT tags to sum across samples and add to INFO, from high prioirty to low priority, e.g., DP=DP means 'INFO/DP = sum(FORMAT/DP)'.")
 vcf_info_arg.add_argument("--format-to-info-sum", metavar="TAG", type=str, required=False,
-                          help="Comma separated FORMAT tags to sum across samples and tags and add to INFO, e.g., 'DP=DR,DP=DV' means 'INFO/DP = sum(FORMAT/DR) + sum(FORMAT/DV)'.")
+                          help="Comma separated FORMAT tags to sum across samples and tags and add to INFO, e.g., 'DP=DR,DP=DV' means 'INFO/DP = sum(FORMAT/DR) + sum(FORMAT/DV)'. Please define the header of new tags in --header or --header-str")
 vcf_info_arg.add_argument("--info-to-alt", metavar="TAG", type=str, required=False,
                           help="Comma separated INFO tags to fill in ALT, from high prioirty to low priority. This is useful if insertion sequence stored in INFO.")
 # vcf_info_arg.add_argument("--sum", action="store_true", default=False,
 #                           help="Change merge logic to sum, all tags must exist for all records, e.g., '--format-to-info DP=DR,DP=DV --sum' means 'INFO/DP = sum(FORMAT/DR + FORMAT/DV)'")
 vcf_info_arg.add_argument("--keep-old", action="store_true", default=False,
-                          help="Keep original INFO tags after renaming (default: False)")
+                          help="Keep original INFO tags after renaming or sum (default: False)")
 vcf_info_arg.add_argument("--keep-all", action="store_true", default=False,
                           help="Keep all original INFO tags (default: False)")
 vcf_info_arg.add_argument("--no-AC", action="store_true", default=False,
@@ -70,7 +70,7 @@ sv_arg.add_argument("--CNV", metavar="CNV", type=str, required=False, default="C
 sv_arg.add_argument("--BND", metavar="BND", type=str, required=False, default="BND",
                     help="Comma separated SVTYPE string for breakends, will be nomalized as BND (default: BND)")                 
 sv_arg.add_argument("--no-check", action="store_true", default=False,
-                    help="Disable check and filter on ID, SVTYPE for downstream analysis (default: False)")
+                    help="Disable check and filter on variant ID and SVTYPE (default: False)")
 
 optional_arg = parser.add_argument_group('Optional arguments')
 optional_arg.add_argument("-h", "--help", action='help', help='show this help message and exit')
@@ -80,7 +80,7 @@ class TagParser:
     def __init__(self, pattern_str: str) -> None:
         self.pattern_str = pattern_str
         self.pattern_dict = self.parse_pattern_str(pattern_str)
-        self.new_tags = self.pattern_dict.keys()
+        self.new_tags = list(self.pattern_dict.keys())
         self.old_tags = [tag for old_tag_list in self.pattern_dict.values() for tag in old_tag_list]
 
     def parse_pattern_str(self, pattern_str: str) -> dict:
@@ -102,12 +102,12 @@ class TagParser:
 
         return pattern_dict
     
-    def add_tag(self, new_tag: str, old_tag:str) -> None:
-        """ Add new tag and map to old tags """
-        if new_tag not in self.pattern_dict:
-            self.pattern_dict[new_tag] = [old_tag]
-        else:
-            self.pattern_dict[new_tag].append(old_tag)
+    # def add_tag(self, new_tag: str, old_tag:str) -> None:
+    #     """ Add new tag and map to old tags """
+    #     if new_tag not in self.pattern_dict:
+    #         self.pattern_dict[new_tag] = [old_tag]
+    #     else:
+    #         self.pattern_dict[new_tag].append(old_tag)
 
     def map_tag(self, new_tag:str) -> list:
         """ Map new tag to old tag list """
@@ -151,9 +151,16 @@ class SVTypeMapper:
             
             return svtype_dict
     
-    def map_svtype(self, svtype: str) -> str:
+    def map(self, svtype: str) -> str:
         """ Map SVTYPE string """
         return self.svtype_dict[svtype]
+    
+    def get_allow_svtypes(self) -> set:
+        """ Get allowed SV types """
+        if self.require_map:
+            return set(self.svtype_dict.keys())
+        else:
+            return {'INS', 'DEL', 'DUP', 'INV', "CNV", "BND"}
 
 
 def parse_tags(args) -> None:
@@ -230,13 +237,23 @@ AC_DICT = {(None, None): 0,
            (1, 1): 2}
 
 
-def sum_AC(samples, AC_dict=AC_DICT):
+def sum_AC(samples: pysam.VariantRecordSamples, AC_dict=AC_DICT):
     """ Sum GT to get AC """
     AC = 0
     for id in samples:
         AC += AC_dict[samples[id]["GT"]]
     
     return AC
+
+def sum_AN(samples: pysam.VariantRecordSamples) -> int:
+    """ Sum GT to get AN """
+    AN = 0
+    for id in samples:
+        for x in samples[id]['GT']:
+            if x is not None:
+                AN += 1
+    
+    return AN
 
 
 def reheader(file_invcf: str, output_prefix: str, file_header: str) -> str:
@@ -250,10 +267,11 @@ def reheader(file_invcf: str, output_prefix: str, file_header: str) -> str:
     return file_out
 
 
-def add_header(header: pysam.VariantHeader, info_parser: TagParser, header_str: str) -> pysam.VariantHeader:
+def add_header(header: pysam.VariantHeader, info_parser: TagParser, format_parser: TagParser, header_str: str) -> pysam.VariantHeader:
     """ Create new vcf header """
     logger = logging.getLogger(__name__)
 
+    # add headers given by --header-str
     if header_str is not None:
         for header_line in header_str.split(";"):
             header_line = header_line.split(",")
@@ -264,19 +282,38 @@ def add_header(header: pysam.VariantHeader, info_parser: TagParser, header_str: 
             if header_line[0] not in header.info:
                 header.info.add(header_line[0], header_line[1], header_line[2], header_line[3])
 
-    for new_tag in info_parser.new_tags:
-        if new_tag in header.info:
-            continue
-        else:
-            old_tag = info_parser.map_tag(new_tag)[0]
-            old_header = header.info[old_tag]
-            header.info.add(new_tag, old_header.number, old_header.type, old_header.description)
+    # add renamed tags specify by --info
+    if info_parser is not None:
+        for new_tag in info_parser.new_tags:
+            if new_tag in header.info:
+                continue
+            else:
+                old_tag = info_parser.map_tag(new_tag)[0]
+                old_header = header.info[old_tag]
+                header.info.add(new_tag, old_header.number, old_header.type, old_header.description)
+        
+    # add new tags specify by --format-to-info
+    if format_parser is not None:
+        for new_tag in format_parser.new_tags:
+            if new_tag in header.info:
+                continue
+            else:
+                old_tag = format_parser.map_tag(new_tag)[0]
+                old_header = header.info[old_tag]
+                if old_header.type == 'G':
+                    logger.warning(f'FORMAT/{old_tag} with Number=G will be added to INFO/{new_tag} with Number=., please check the output.')
+                    header.info.add(new_tag, old_header.number, '.', old_header.description)
+                else:
+                    header.info.add(new_tag, old_header.number, old_header.type, old_header.description)
+    
     # add mandatory tags if not exist
     if "SVTYPE" not in header.info:
         header.info.add("SVTYPE", "1", "String", "Type of structural variantion")
     # add INFO required for downstream analysis if missing
     if "AC" not in header.info:
         header.info.add("AC", "A", "Integer", "Allele count for each ALT allele")
+    if "AN" not in header.info:
+        header.info.add("AN", "A", "Integer", "Number of genotyped alleles")
     if "DP" not in header.info:
         header.info.add("DP", "1", "Integer", "Read depth")
     if "ID_OLD" not in header.info:
@@ -288,12 +325,74 @@ def add_header(header: pysam.VariantHeader, info_parser: TagParser, header_str: 
 def check_header(header: pysam.VariantHeader, parser: TagParser) -> None:
     """ Check if all new tags are defined in the header"""
     logger = logging.getLogger(__name__)
+    if parser is None:
+        return None
+
     for new_tag in parser.new_tags:
         if new_tag not in header.info:
             logger.error(f"New tag {new_tag} is not defined in the header. Please specify it by --header or --header-str.")
             raise SystemExit()
 
 
+def clean_tag(new_var: pysam.VariantRecord, old_var: pysam.VariantRecord, 
+              keep_all: bool, keep_old: bool, old_tags: list) -> pysam.VariantRecord:
+    """ Clean old INFO tags """
+    if keep_all:
+        return new_var
+    else:
+        new_var.info.clear()
+
+    # keep old tags if specified
+    if keep_old:
+        for x in old_tags:
+            # pysam not allow access END by info['END']
+            if x != 'END':
+                new_var.info[x] = old_var.info[x]
+    
+    return new_var
+
+
+def add_new_tag(new_var: pysam.VariantRecord, old_var: pysam.VariantRecord, 
+                parser: TagParser, is_info: bool, is_sum: bool) -> pysam.VariantRecord:
+    """ Extract / rename / sum tags """
+    
+    if parser is None:
+        return new_var
+
+    for new_tag in parser.new_tags:
+        old_tag_list = parser.map_tag(new_tag)
+        
+        # add INFO/old to INFO/new
+        if is_info:
+            # sum old tags
+            if is_sum:
+                new_var.info[new_tag] = sum_info(old_var.info, old_tag_list)
+            # extract / rename the first existing old tag to new tag
+            else:
+                for old_tag in old_tag_list:
+                    if old_tag in old_var.info:
+                        new_var.info[new_tag] = old_var.info[old_tag]
+                        break
+
+        # add FORMAT/old to INFO/new
+        else:
+            # sum old tags
+            if is_sum:
+                # sum across samples
+                format_tag_sum_list = [sum_format(old_var.samples, format_tag) for format_tag in old_tag_list]
+                # if any FORMAT/tag are missing in all samples, return None
+                if None in format_tag_sum_list:
+                    new_var.info[new_tag] = None
+                else:
+                    new_var.info[new_tag] = functools.reduce(sum_tag, format_tag_sum_list)
+            # extract FORMAT/tag to INFO/tag
+            else:
+                for format_tag in old_tag_list:
+                    format_tag_sum = sum_format(old_var.samples, format_tag)
+                    if format_tag_sum is not None:
+                        new_var.info[new_tag] = format_tag_sum
+                        break
+    return new_var
 
 def harmonizeVCF_main(cmdargs) -> None:
     """ Harnomize vcf INFO fields """
@@ -303,6 +402,7 @@ def harmonizeVCF_main(cmdargs) -> None:
 
     # read input
     if args.header is not None:
+        logger.info(f'Reheader vcf: {args.invcf} with {args.header}')
         file_reheader_vcf = reheader(file_invcf=args.invcf, output_prefix=args.outvcf, file_header=args.header)
         invcf = read_vcf(file_reheader_vcf, check_n=0)
     else:
@@ -311,126 +411,101 @@ def harmonizeVCF_main(cmdargs) -> None:
     # parse tags to be extracted
     info_parser, info_sum_parser, format_parser, format_sum_parser, alt_parser = parse_tags(args)
 
+    # parset SVTYPE
+    svtype_mapper = SVTypeMapper(args)
+    svtype_allow = svtype_mapper.get_allow_svtypes()
+
     # create new VCF header, add renamed INFO headers
-    new_header = add_header(invcf.header, info_parser=info_parser, header_str=args.header_str)
+    new_header = add_header(invcf.header, info_parser=info_parser, format_parser=format_parser, header_str=args.header_str)
     # check new VCF header
-    if info_sum_parser is not None:
-        check_header(new_header, info_sum_parser)
-    if format_parser is not None:
-        check_header(new_header, format_parser)
-    if format_sum_parser is not None:
-        check_header(new_header, format_sum_parser)
+    check_header(new_header, info_parser)
+    check_header(new_header, info_sum_parser)
+    check_header(new_header, format_parser)
+    check_header(new_header, format_sum_parser)
 
-    # log for harmonize behavior
-    # TODO: determine whether and where to log
-    if args.keep_all:
-        logger.info("Keep all original INFO tags")
-    else:
-        logger.info("Drop original INFO tags not included in --info string")
-    if args.keep_old:
-        logger.info("Keep old INFO names for renamed INFO")
-
-    # write new vcf
-    outvcf = pysam.VariantFile(args.outvcf, "w", header=new_header)
-    
     # rename ID
     ID_set = set()
     if args.rename_id:
-        outvcf_id = IdGenerator(args.id_prefix)
+        var_id = IdGenerator(args.id_prefix)
 
+    # get the string of 'SVTYPE'
     svtype = args.svtype
 
-    for variant in invcf.fetch():
+    # get old tags
+    old_tags = []
+    if args.keep_old:
+        if info_parser is not None:
+            old_tags = old_tags + info_parser.old_tags
+        if info_sum_parser is not None:
+            old_tags = old_tags + info_sum_parser.old_tags
+
+    # write new vcf
+    outvcf = pysam.VariantFile(args.outvcf, "w", header=new_header)
+
+    for old_var in invcf.fetch():
         # check ID and SVTYPE
         if not args.no_check:
-            if svtype not in variant.info:
-                logger.warning(f"{svtype} is not found in {variant.id}, skip")
+            if svtype not in old_var.info:
+                logger.warning(f"{svtype} is not found in {old_var.id}, skip")
                 continue
-            if variant.info[svtype] not in SVTYPE_ALLOW:
-                logger.warning(f"SVTYPE '{variant.info[svtype]}' of {variant.id} is not allowed, skip)")
+
+            if old_var.info[svtype] not in svtype_allow:
+                logger.warning(f"SVTYPE '{old_var.info[svtype]}' of {old_var.id} is not in {svtype_allow}, skip)")
                 continue
 
             if not args.rename_id:
-                if variant.id is None:
-                    logger.warning(f"ID is missing at {variant.chrom}:{variant.pos}, skip. Please use --rename to update all ID")
+                if old_var.id is None:
+                    logger.warning(f"ID is missing at {old_var.chrom}:{old_var.pos}, skip. Please use --rename to update all ID")
                     continue
-                if variant.id in ID_set:
-                    logger.warning(f"Duplicate ID found: {variant.id}, only keep the first one. Please use --rename to update all ID")
+                if old_var.id in ID_set:
+                    logger.warning(f"Duplicate ID found: {old_var.id}, only keep the first one. Please use --rename to update all ID")
                     continue
             
-            ID_set.add(variant.id)
+            ID_set.add(old_var.id)
 
-        new_variant = variant.copy()
-        
+        new_var = old_var.copy()
 
-        # clear all old INFO
-        if not args.keep_all:
-            new_variant.info.clear()
+        # clean old INFO
+        old_tags_exist = [x for x in old_tags if x in old_var.info]
+        new_var = clean_tag(new_var, old_var, args.keep_all, args.keep_old, old_tags_exist)
 
-            # keep old tags if specified
-            if args.keep_old:
-                for old_tag in info_parser.old_tags:
-                    if old_tag in variant.info:
-                        new_variant.info[old_tag] = variant.info[old_tag]
+        # format SVTYPE
+        if svtype_mapper.require_map:
+            new_var.info['SVTYPE'] = svtype_mapper.map(old_var.info[svtype])
+        else:
+            new_var.info['SVTYPE'] = old_var.info[svtype]
 
         # rename ID
         if args.id_prefix is not None:
-            new_variant.info['ID_OLD'] = variant.id
+            new_var.info['ID_OLD'] = old_var.id
             if args.rename_id:
-                new_variant.id = outvcf_id.get(variant.info["SVTYPE"])
+                new_var.id = var_id.get(new_var.info['SVTYPE'])
             else:
-                new_variant.id = f"{args.id_prefix}.{variant.id}"
+                new_var.id = f"{args.id_prefix}.{old_var.id}"
         
-        # calculate AC
+        # calculate AC and AN
         if not args.no_AC:
-            new_variant.info["AC"] = sum_AC(variant.samples)
+            new_var.info["AC"] = sum_AC(old_var.samples)
+            new_var.info["AN"] = sum_AN(old_var.samples)
 
-        # add new tags from INFO
-        for new_tag in info_parser.new_tags:
-            old_tag_list = info_parser.map_tag(new_tag)
-
-            # set new tag as the first old tag
-            if len(old_tag_list) == 1 or not args.sum:
-                for old_tag in old_tag_list:
-                    if old_tag in variant.info:
-                        new_variant.info[new_tag] = variant.info[old_tag]
-                        break
-            # sum of old tags
-            else:
-                new_variant.info[new_tag] = sum_info(variant.info, old_tag_list)
-        
-        # add new tags from FORMAT
-        if args.format_to_info is not None:
-            for new_tag in format_parser.new_tags:
-                format_tag_list = format_parser.map_tag(new_tag)
-
-                # set new_tag as first sum(format tag)
-                if len(format_tag_list) == 1 or not args.sum:
-                    for format_tag in format_tag_list:
-                        tag_sample_sum = sum_format(variant.samples, format_tag)
-                        if tag_sample_sum is not None:
-                            new_variant.info[new_tag] = tag_sample_sum
-                            break
-                # sum of format tags
-                else:
-                    format_tag_values = [sum_format(variant.samples, format_tag) for format_tag in format_tag_list]
-                    # in case all FORMAT tag are missing
-                    if None not in format_tag_values:
-                        new_variant.info[new_tag] = functools.reduce(sum_tag, format_tag_values)
-
+        # add new tags from INFO and FORMAT
+        new_var = add_new_tag(new_var, old_var, info_parser, is_info=True, is_sum=False)
+        new_var = add_new_tag(new_var, old_var, info_sum_parser, is_info=True, is_sum=True)
+        new_var = add_new_tag(new_var, old_var, format_parser, is_info=False, is_sum=False)
+        new_var = add_new_tag(new_var, old_var, format_sum_parser, is_info=False, is_sum=True)
 
         # add INFO to ALT
         if args.info_to_alt is not None:
             for info_tag in alt_parser.old_tags:
-                if info_tag in variant.info:
-                    tag_value = variant.info[info_tag]
+                if info_tag in old_var.info:
+                    tag_value = old_var.info[info_tag]
                     if isinstance(tag_value, tuple):
-                        new_variant.alts = tag_value
+                        new_var.alts = tag_value
                     else:
-                        new_variant.alts = tuple([tag_value])
+                        new_var.alts = tuple([tag_value])
                     break
 
-        outvcf.write(new_variant)
+        outvcf.write(new_var)
 
     invcf.close()
     outvcf.close()
@@ -439,6 +514,4 @@ def harmonizeVCF_main(cmdargs) -> None:
         os.remove(file_reheader_vcf)
 
     logger.info(f"Write output to {args.outvcf}")
-    if args.outvcf.endswith("vcf.gz"):
-        pysam.bcftools.index("-t", args.outvcf)
 
