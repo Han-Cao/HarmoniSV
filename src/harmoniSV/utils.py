@@ -13,7 +13,7 @@ import pandas as pd
 import pyranges as pr
 
 
-SVTYPE_ALLOW = {'INS', 'DEL', 'DUP', 'INV'}
+SVTYPE_ALLOW = {'INS', 'DEL', 'DUP', 'INV', "CNV", "BND"}
 
 def read_vcf(file_vcf: str, check_id: bool=False, check_svtype: bool=False, check_sample: bool=False, check_n: int=10000):
     """Read vcf file"""
@@ -29,6 +29,7 @@ def read_vcf(file_vcf: str, check_id: bool=False, check_svtype: bool=False, chec
             raise SystemExit()
     
     if (check_id or check_svtype) and check_n > 0:
+        logger.info(f"Check format of first {check_n} variants")
         id_set = set()
         for i, variant in enumerate(vcf.fetch(), start=1):
             if check_id:
@@ -50,7 +51,7 @@ def read_vcf(file_vcf: str, check_id: bool=False, check_svtype: bool=False, chec
     return vcf
 
 
-class ID_generator:
+class IdGenerator:
     """ Generate new SV IDs """
     def __init__(self, prefix: str, chr: str=None) -> None:
         self.prefix = prefix

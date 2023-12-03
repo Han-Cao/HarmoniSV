@@ -10,7 +10,7 @@ import argparse
 import pandas as pd
 import logging
 
-from utils import ID_generator, read_vcf, parse_cmdargs
+from utils import IdGenerator, read_vcf, parse_cmdargs
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv represent",
@@ -271,7 +271,7 @@ def representSV_main(cmdargs) -> None:
 
     # create output vcf ID generater
     if id_prefix is not None:
-        outvcf_id = ID_generator(id_prefix, region)
+        outvcf_id = IdGenerator(id_prefix, region)
 
     # find all representative SVs
     df_info_merged = df_info.loc[list(invcf_cleaner.merged_sv)] # only keep info for merged SVs

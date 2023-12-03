@@ -23,7 +23,7 @@ io_arg.add_argument("-f", "--file-list", required=False, type=str, metavar="FILE
 io_arg.add_argument("-o", "--output", required=True, type=str, metavar="OUTPUT",
                     help="Output VCF header file")
 
-optional = parser.add_argument_group("optional arguments")
+optional = parser.add_argument_group("Optional arguments")
 optional.add_argument("-r", "--ref-vcf", required=False, type=str, metavar="VCF",
                       help="Reference VCF file, highest priority for duplicate headers")
 optional.add_argument("-h", "--help", action="help", help="Show this help message and exit")
