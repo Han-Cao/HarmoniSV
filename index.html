@@ -68,9 +68,9 @@
               </ul>
               <p class="caption"><span class="caption-text">VCF manipulation</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="VCF_manipulation/harmonize/">harmonize</a>
-                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="VCF_manipulation/harmonize_header/">harmonize-header</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="VCF_manipulation/harmonize/">harmonize</a>
                   </li>
                   <li class="toctree-l1"><a class="" href="VCF_manipulation/sample2pop.md">sample2pop</a>
                   </li>
@@ -114,12 +114,12 @@
               
                 <h1 id="harmonisv">HarmoniSV</h1>
 <p>A toolkit to harmonize and filter structural variations across methods and samples.</p>
-<p><strong><em> Last updated: 2023-03-19 </em></strong></p>
+<p><strong><em> Last updated: 2023-12-04 </em></strong></p>
 <h2 id="features">Features</h2>
 <ul>
-<li>Harmonize population-scale SV calling and force-calling results from any SV callers</li>
-<li>Machine learning SV filter to balance accuracy and sensitivity</li>
-<li>Fast VCF manipulation via <code>pysam</code></li>
+<li>Harmonize SVs discovered by different SV calling methods</li>
+<li>Filter high-confidence SVs with a random forest classifier</li>
+<li>Fast VCF manipulation, annotation, and conversion</li>
 </ul>
 <h2 id="important">Important</h2>
 <p>This documentation is not finished yet. Please type <code>harmonisv &lt;command&gt; -h</code> to get help for each command.</p>
@@ -174,5 +174,5 @@
 
 <!--
 MkDocs version : 1.4.2
-Build Date UTC : 2023-10-03 04:59:07.730623+00:00
+Build Date UTC : 2023-12-04 08:51:20.474356+00:00
 -->
