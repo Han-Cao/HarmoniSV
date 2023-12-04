@@ -1,12 +1,12 @@
 # HarmoniSV
 A toolkit to harmonize and filter structural variations across methods and samples.
 
-**Important**: This tool is under development and lack of detailed documentation. We have tested HarmoniSV to perform population-scale SV calling using SV calls from `Sniffles2`, `cuteSV`, and `SVIM`. It should be able to work with any SV callers whose output follows VCF specification. Please open an issue for questions or bug reports.
+**Important**: The document is under development. We have tested HarmoniSV to perform population-scale SV calling using SV calls from `Sniffles2`, `cuteSV`, and `SVIM`. It should be able to work with any SV callers whose output follows VCF specification. Please open an issue for questions or bug reports.
 
 ## Features
-- Harmonize population-scale SV calling and force-calling results from any SV callers
-- Machine learning SV filter to balance accuracy and sensitivity
-- Fast VCF manipulation, annotation, and conversion via `pysam`
+- Harmonize SVs discovered by different SV calling methods
+- Filter high-confidence SVs with a random forest classifier
+- Fast VCF manipulation, annotation, and conversion
 
 ## Installation
 ``` bash
@@ -50,9 +50,11 @@ Commands:
 
 Note:
     1. All input VCFs MUST follow the VCF specification
-    2. HarmoniSV assume specific variant ID format to index SVs from different methods and samples, 
-       please check the required ID format of different commands before you use
-    3. The input/output VCF format (i.e., vcf, vcf.gz, bcf) will be automatically detected
+    2. Some commands assume specific variant ID format to index SVs from different methods and samples, 
+       please check the required ID format before you use
+    3. The input/output VCF format (i.e., vcf, vcf.gz, bcf) will be automatically detected. However, a 
+       temporary uncompressed VCF file will be generated if the output is vcf.gz or bcf.
+     
 
 For help on a specific command, run:
     harmonisv <command> -h
