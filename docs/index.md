@@ -2,12 +2,12 @@
 
 A toolkit to harmonize and filter structural variations across methods and samples.
 
-*** Last updated: 2023-03-19 ***
+*** Last updated: 2023-12-04 ***
 
 ## Features
-- Harmonize population-scale SV calling and force-calling results from any SV callers
-- Machine learning SV filter to balance accuracy and sensitivity
-- Fast VCF manipulation via `pysam`
+- Harmonize SVs discovered by different SV calling methods
+- Filter high-confidence SVs with a random forest classifier
+- Fast VCF manipulation, annotation, and conversion
 
 ## Important
 This documentation is not finished yet. Please type `harmonisv <command> -h` to get help for each command.

@@ -18,7 +18,7 @@ parser = argparse.ArgumentParser(prog="harmonisv harmonize",
                                  description="Harmonize SV VCFs from across samples and SV calling methods",
                                  add_help=False)
 
-required = parser.add_argument_group('Required arguments')
+required = parser.add_argument_group('Input/Output arguments')
 required.add_argument("-i", "--invcf", metavar="VCF", type=str, required=True,
                       help="input VCF")
 required.add_argument("-o", "--outvcf", metavar="VCF", type=str, required=True,
@@ -28,7 +28,7 @@ vcf_info_arg = parser.add_argument_group('VCF INFO manipulation')
 vcf_info_arg.add_argument("--info", metavar="TAG", type=str, required=False,
                           help="Comma separated INFO tags to extract or rename. INFO tags can be renamed by NEW=OLD, from high prioirty to low priority, e.g., 'NEW=OLD1,NEW=OLD2' means if OLD1 is present, use OLD1, otherwise use OLD2.")
 vcf_info_arg.add_argument("--info-sum", metavar="TAG", type=str, required=False,
-                          help="Comma separated INFO tags to extract and sum. Old tags with the same new tag name will be summed up, e.g., 'NEW=OLD1,NEW=OLD2' means 'INFO/NEW = INFO/OLD1 + INFO/OLD2'. Please define the header of new tags in --header or --header-str")
+                          help="Comma separated INFO tags to sum. Old tags with the same new tag name will be summed up, e.g., 'NEW=OLD1,NEW=OLD2' means 'INFO/NEW = INFO/OLD1 + INFO/OLD2'. Please define the header of new tags in --header or --header-str")
 vcf_info_arg.add_argument("--format-to-info", metavar="TAG", type=str, required=False,
                           help="Comma separated FORMAT tags to sum across samples and add to INFO, from high prioirty to low priority, e.g., DP=DP means 'INFO/DP = sum(FORMAT/DP)'.")
 vcf_info_arg.add_argument("--format-to-info-sum", metavar="TAG", type=str, required=False,
