@@ -11,7 +11,7 @@ import functools
 import logging
 import os
 
-from utils import read_vcf, IdGenerator, parse_cmdargs
+from utils import read_vcf, OutVcf, IdGenerator, parse_cmdargs
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv harmonize",
@@ -42,7 +42,7 @@ vcf_info_arg.add_argument("--keep-old", action="store_true", default=False,
 vcf_info_arg.add_argument("--keep-all", action="store_true", default=False,
                           help="Keep all original INFO tags (default: False)")
 vcf_info_arg.add_argument("--no-AC", action="store_true", default=False,
-                          help="Disable automatically add AC to INFO (default: False)")
+                          help="Disable automatically add AC and AN to INFO (default: False)")
 
 vcf_header_arg = parser.add_argument_group('VCF header manipulation')
 vcf_header_arg.add_argument("--header", metavar="FILE", type=str, required=False,
@@ -56,7 +56,7 @@ sv_arg.add_argument("--id-prefix", metavar="PREFIX", type=str, required=False,
 sv_arg.add_argument("--rename-id", action="store_true", default=False,
                     help="Rename SV ID to PREFIX.SVTYPE.No., must use with --id-prefix")
 sv_arg.add_argument("--svtype", metavar="SVTYPE", type=str, required=False, default="SVTYPE",
-                    help="INFO tag stores the SVTYPE (default: SVTYPE). Will rename it to SVTYPE if not.")
+                    help="INFO tag stores the structural variation type (default: SVTYPE), will rename it to SVTYPE if not.")
 sv_arg.add_argument("--INS", metavar="INS", type=str, required=False, default="INS",
                     help="Comma separated SVTYPE string for insertions, will be nomalized as INS (default: INS)")
 sv_arg.add_argument("--DEL", metavar="DEL", type=str, required=False, default="DEL",
@@ -165,10 +165,10 @@ class SVTypeMapper:
 
 def parse_tags(args) -> None:
     """ Parse tags to be extracted """
-    info = args.info
-    if info is None:
-        info = f"SVTYPE={args.svtype}"
-    info_parser = TagParser(info)
+    if args.info is not None:
+        info_parser = TagParser(args.info)
+    else:
+        info_parser = None
 
     if args.info_sum is not None:
         info_sum_parser = TagParser(args.info_sum)
@@ -299,7 +299,7 @@ def add_header(header: pysam.VariantHeader, info_parser: TagParser, format_parse
                 continue
             else:
                 old_tag = format_parser.map_tag(new_tag)[0]
-                old_header = header.info[old_tag]
+                old_header = header.formats[old_tag]
                 if old_header.type == 'G':
                     logger.warning(f'FORMAT/{old_tag} with Number=G will be added to INFO/{new_tag} with Number=., please check the output.')
                     header.info.add(new_tag, old_header.number, '.', old_header.description)
@@ -360,6 +360,10 @@ def add_new_tag(new_var: pysam.VariantRecord, old_var: pysam.VariantRecord,
         return new_var
 
     for new_tag in parser.new_tags:
+        # SVTYPE is handled separately by SVTypeMapper
+        if new_tag == 'SVTYPE':
+            continue
+
         old_tag_list = parser.map_tag(new_tag)
         
         # add INFO/old to INFO/new
@@ -394,6 +398,8 @@ def add_new_tag(new_var: pysam.VariantRecord, old_var: pysam.VariantRecord,
                         break
     return new_var
 
+
+
 def harmonizeVCF_main(cmdargs) -> None:
     """ Harnomize vcf INFO fields """
     logger = logging.getLogger(__name__)
@@ -411,7 +417,8 @@ def harmonizeVCF_main(cmdargs) -> None:
     # parse tags to be extracted
     info_parser, info_sum_parser, format_parser, format_sum_parser, alt_parser = parse_tags(args)
 
-    # parset SVTYPE
+    # parse SVTYPE
+    svtype = args.svtype
     svtype_mapper = SVTypeMapper(args)
     svtype_allow = svtype_mapper.get_allow_svtypes()
 
@@ -428,9 +435,6 @@ def harmonizeVCF_main(cmdargs) -> None:
     if args.rename_id:
         var_id = IdGenerator(args.id_prefix)
 
-    # get the string of 'SVTYPE'
-    svtype = args.svtype
-
     # get old tags
     old_tags = []
     if args.keep_old:
@@ -440,7 +444,7 @@ def harmonizeVCF_main(cmdargs) -> None:
             old_tags = old_tags + info_sum_parser.old_tags
 
     # write new vcf
-    outvcf = pysam.VariantFile(args.outvcf, "w", header=new_header)
+    outvcf = OutVcf(args.outvcf, header=new_header)
 
     for old_var in invcf.fetch():
         # check ID and SVTYPE
@@ -512,6 +516,4 @@ def harmonizeVCF_main(cmdargs) -> None:
 
     if args.header is not None:
         os.remove(file_reheader_vcf)
-
-    logger.info(f"Write output to {args.outvcf}")
 
