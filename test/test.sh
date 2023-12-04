@@ -37,3 +37,33 @@ ls raw/*sniffles* | while read vcf; do
 
 done
 
+# SVIM
+ls raw/*svim* | while read vcf; do
+    name=$(basename $vcf)
+    name=${name%.vcf}
+
+    $harmonisv harmonize \
+    -i $vcf \
+    -o ${dir_harmonize}/${name}.harmonized.vcf \
+    --info SVTYPE,SVLEN,END,RE=SUPPORT \
+    --format-to-info DP=DP \
+    --DUP DUP,DUP:TANDEM,DUP:INT \
+    --header $dir_header/harmonized_header.txt \
+    --id-prefix $name \
+    --rename-id 2> ${dir_harmonize}/${name}.harmonized.vcf.log
+done
+
+# cuteSV
+ls raw/*cuteSV* | while read vcf; do
+    name=$(basename $vcf)
+    name=${name%.vcf}
+
+    $harmonisv harmonize \
+    -i $vcf \
+    -o ${dir_harmonize}/${name}.harmonized.vcf \
+    --info SVTYPE,SVLEN,END,RE \
+    --format-to-info-sum DP=DR,DP=DV \
+    --header $dir_header/harmonized_header.txt \
+    --id-prefix $name \
+    --rename-id 2> ${dir_harmonize}/${name}.harmonized.vcf.log
+done
