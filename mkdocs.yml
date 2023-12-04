@@ -21,8 +21,8 @@ nav:
     - 'Tutorial': 'tutorial.md'
     - 'Command list': 'command_list.md'
     - 'VCF manipulation':
-        - 'harmonize': 'VCF_manipulation/harmonize.md'
         - 'harmonize-header': 'VCF_manipulation/harmonize_header.md'
+        - 'harmonize': 'VCF_manipulation/harmonize.md'
         - 'sample2pop': 'VCF_manipulation/sample2pop.md'
         - 'intersect': 'VCF_manipulation/intersect.md'
     - 'SV analysis':

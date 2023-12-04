@@ -4,8 +4,8 @@
 
 **VCF manipulation**
 
-- [harmonize]          Harmonize SV VCFs across samples and SV calling methods
 - [harmonize-header]   Harmonize VCF headers
+- [harmonize]          Harmonize SV VCFs across samples and SV calling methods
 - [sample2pop]         Convert single-sample VCF to multi-sample VCF
 - [intersect]          Intersect SVs with genomic features
 
