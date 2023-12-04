@@ -7,8 +7,10 @@
 import logging
 import sys
 import argparse
+import os
 
 import pysam
+import pysam.bcftools
 import pandas as pd
 import pyranges as pr
 
@@ -50,6 +52,61 @@ def read_vcf(file_vcf: str, check_id: bool=False, check_svtype: bool=False, chec
     vcf.reset()
     return vcf
 
+
+class OutVcf:
+    """ Class to write vcf file """
+    def __init__(self, file_vcf: str, header: pysam.VariantHeader, verbosity: int=2000) -> None:
+        self.file_vcf = file_vcf
+        self.header = header
+
+        # set output mode
+        if (file_vcf.endswith('vcf.gz') or file_vcf.endswith('vcf.bgz')):
+            self.flag = 'bgz'
+            self.file_out = f'{file_vcf}.tmp'
+        elif file_vcf.endswith('bcf'):
+            self.flag = 'bcf'
+            self.file_out = f'{file_vcf}.tmp'
+        else:
+            self.flag = 'vcf'
+            self.file_out = file_vcf
+        
+        # open file
+        self.f = open(self.file_out, 'w')
+
+        # set log
+        self.logger = logging.getLogger(__name__)
+        self.verbosity = verbosity
+        self.counter = 0
+
+        # write header
+        self.f.write(str(self.header))
+    
+
+    def write(self, record: pysam.VariantRecord):
+        """ Write a variant record """
+        self.f.write(str(record))
+        self.counter += 1
+
+        if self.counter % self.verbosity == 0:
+            self.logger.info(f"{self.counter} variants processed")
+
+
+    def close(self):
+        """ Close file """
+        self.f.close()
+        self.logger.info(f"{self.counter} variants processed")
+
+        if self.flag == 'bgz':
+            pysam.bcftools.view('--no-version', '-Oz', '-o', self.file_vcf, self.file_out, catch_stdout=False)
+            os.remove(self.file_out)
+        elif self.flag == 'bcf':
+            pysam.bcftools.view('--no-version', '-Ob', '-o', self.file_vcf, self.file_out, catch_stdout=False)
+            os.remove(self.file_out)
+
+        self.logger.info(f"Write output to {self.file_vcf}")        
+
+
+        
 
 class IdGenerator:
     """ Generate new SV IDs """
