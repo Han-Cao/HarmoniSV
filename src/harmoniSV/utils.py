@@ -17,11 +17,17 @@ import pyranges as pr
 
 SVTYPE_ALLOW = {'INS', 'DEL', 'DUP', 'INV', "CNV", "BND"}
 
-def read_vcf(file_vcf: str, check_id: bool=False, check_svtype: bool=False, check_sample: bool=False, check_n: int=10000):
+def read_vcf(file_vcf: str, 
+             check_id: bool=False, 
+             check_svtype: bool=False, 
+             check_sample: bool=False, 
+             check_n: int=10000,
+             slient: bool=False) -> pysam.VariantFile:
     """Read vcf file"""
     logger = logging.getLogger(__name__)
 
-    logger.info(f"Read vcf file: {file_vcf}")
+    if not slient:
+        logger.info(f"Read vcf file: {file_vcf}")
     vcf = pysam.VariantFile(file_vcf, 'r')
 
     if check_sample:
@@ -83,7 +89,7 @@ class OutVcf:
         self.f.write(str(record))
 
 
-    def close(self):
+    def close(self, slient: bool=False):
         """ Close file """
         self.f.close()
 
@@ -94,7 +100,8 @@ class OutVcf:
             pysam.bcftools.view('--no-version', '-Ob', '-o', self.file_vcf, self.file_out, catch_stdout=False)
             os.remove(self.file_out)
 
-        self.logger.info(f"Write output to {self.file_vcf}")        
+        if not slient:
+            self.logger.info(f"Write output to {self.file_vcf}")        
 
 
 def read_manifest(file_manifest: str, default_info: list=[]) -> pd.DataFrame:
@@ -105,7 +112,6 @@ def read_manifest(file_manifest: str, default_info: list=[]) -> pd.DataFrame:
     Column 1: <file_vcf>, one file per line
     Column 2 (optional): <info_tag>, comma separated list of INFO tags to be extracted, all if not specified
     """
-    logger = logging.getLogger(__name__)
 
     df_manifest = pd.read_csv(file_manifest, sep='\t', header=None, dtype=str)
 
@@ -116,6 +122,7 @@ def read_manifest(file_manifest: str, default_info: list=[]) -> pd.DataFrame:
         df_manifest.columns = ['file', 'info']
         df_manifest['info'] = df_manifest['info'].str.split(',')
     else:
+        logger = logging.getLogger(__name__)
         logger.error(f"Invalid manifest file, a tab-delimited file without header is required. Column 1: vcf file, Column 2 (optional): comma separated list of INFO tags to be extracted")
         raise SystemExit()
 
@@ -126,23 +133,23 @@ def read_manifest(file_manifest: str, default_info: list=[]) -> pd.DataFrame:
         else:
             df_manifest['info'] = 'all'
     
-    logger.info(f"Found {df_manifest.shape[0]} VCFs from manifest file: {file_manifest}")
-
     return df_manifest
         
 
 def manifest_to_df(df_manifest: pd.DataFrame, region: str=None) -> pd.DataFrame:
     """ Read VCFs in the manifest file and convert to dataframe """
 
-    df_all = pd.DataFrame()
+    lst_df = []
     for i, row in df_manifest.iterrows():
         file_vcf = row['file']
         info = row['info']
         vcf = read_vcf(file_vcf)
         df_vcf = vcf_to_df(vcf, info, region)
         df_vcf['file_idx'] = i
-        df_all = df_all.append(df_vcf)
-    
+        lst_df.append(df_vcf)
+        vcf.close()
+
+    df_all = pd.concat(lst_df, ignore_index=True)
     return df_all
 
 
