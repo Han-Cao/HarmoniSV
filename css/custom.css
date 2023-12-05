@@ -1,3 +1,7 @@
 .rst-content pre code {
     font-size: 14px;
 }
+
+.rst-content code {
+    font-size: 14px;
+}

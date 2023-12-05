@@ -74,6 +74,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#input-filtering">Input filtering</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#vcf-headers">VCF headers</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#arguments">Arguments</a>
@@ -97,7 +99,7 @@
               </ul>
               <p class="caption"><span class="caption-text">SV analysis</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="" href="../../SV_analysis/represent.md">represent</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../SV_analysis/represent/">represent</a>
                   </li>
                   <li class="toctree-l1"><a class="" href="../../SV_analysis/genotype.md">genotype</a>
                   </li>
@@ -133,16 +135,21 @@
               
                 <h1 id="harmonize"><em>harmonize</em></h1>
 <p>Harmonize SV VCFs across samples and SV calling methods</p>
-<p><strong><em> Last updated: 2023-12-04 </em></strong></p>
+<p><strong><em> Last updated: 2023-12-05 </em></strong></p>
 <h2 id="input">Input</h2>
 <ul>
-<li><strong>VCF</strong>: single-sample, bi-allelic, and SV-only VCF/BCF files following the VCF specification. The type of SVs should be specified in the <code>INFO</code> field (not necessarily named as <code>SVTYPE</code>).</li>
-<li><strong>ID format</strong>: no requirements</li>
+<li><strong>VCF</strong>: <ul>
+<li><strong>Format</strong>: bi-allelic VCF/BCF files following the VCF specification</li>
+<li><strong>Required INFO</strong>: <code>SVTYPE</code>, if other name is used, specify by <code>--svtype</code></li>
+</ul>
+</li>
 </ul>
 <h2 id="output">Output</h2>
 <ul>
-<li><strong>VCF</strong>: harmonized VCF/BCF files.</li>
+<li><strong>VCF</strong>: harmonized VCF/BCF files.<ul>
 <li><strong>ID format</strong>: <code>{PREFIX}.{SVTYPE}.{NUMBER}</code> if <code>--rename-id --id-prefix PREFIX</code> is specified, otherwise the same as input.</li>
+</ul>
+</li>
 </ul>
 <h2 id="usage">Usage</h2>
 <pre><code class="language-bash">harmonisv harmonize [options] -i &lt;input_vcf&gt; -o &lt;output_vcf&gt; 
@@ -157,8 +164,23 @@
 <p>If the types of SVs are stored in <code>INFO</code> field with different names, use <code>--svtype</code> to specify the tag name. </p>
 <p>If the SV types are not in the above list, use <code>--INS</code>, <code>--DEL</code>, <code>--DUP</code>, <code>--INV</code>, <code>--CNV</code>, <code>--BND</code> to normalize the SV types. For example, <code>--info SVTYPE_raw=SVTYPE --DUP DUP,DUP:TANDEM</code> will normalize <code>SVTYPE=DUP:TANDEM</code> to <code>SVTYPE=DUP;SVTYPE_raw=DUP:TANDEM</code>.</p>
 <p>To disable the check, use <code>--no-check</code>.</p>
+<h2 id="vcf-headers">VCF headers</h2>
+<p>The VCF headers produced by different SV calling methods are usually not compatable. It is necessary to have a unified VCF header for downstream analysis. If only INFO tags from the original VCFs will be used, one simple method is to use <code>harmonisv harmonize-header</code> to combine the headers from all VCFs (see <a href="../harmonize_header/">harmonize-header</a>). However, if any new INFO tags will be added / renamed, please use <code>--header-str</code> to specify them.</p>
+<p>For example, the following command will combine the headers of method A, B, and C, and add <code>INFO/STRANDS</code> header.</p>
+<pre><code class="language-bash">harmonisv harmonize-header \
+-i A.vcf,B.vcf,C.vcf \
+-o harmonized_header.txt \
+
+for vcf in A.vcf B.vcf C.vcf; do
+    harmonisv harmonize \
+    -i $vcf \
+    -o harmonized.$vcf \
+    --header harmonized_header.txt \
+    --header-str 'STRANDS,1,String,Strand orientation of supporting reads'
+done
+</code></pre>
 <h2 id="examples">Examples</h2>
-<p>Below commands will rename variant ID, normalize SVTYPE, and extract the basic SV calling information:</p>
+<p>In this example, we will rename variant ID, normalize SVTYPE, and extract the basic SV calling information:</p>
 <ul>
 <li>SVTYPE</li>
 <li>SVLEN</li>
@@ -167,7 +189,7 @@
 <li>DP (sequencing depth)</li>
 <li>RE (number of reads supporting the SV)</li>
 </ul>
-<p>Please note that SV-calling methods may store this information under different names. For instance, <code>INFO/SUPPORT</code> might be used for <code>RE</code>, and <code>FORMAT/DP</code> for <code>DP</code>. The sequencing depth might also be provided separately for REF and ALT alleles (e.g., <code>FORMAT/DR</code> and <code>FORMAT/DV</code>). Additionally, the same type of SV might have different names in different methods (e.g., <code>DUP:TANDEM</code> vs <code>DUP</code>). We will store the harmonized information in the <code>INFO</code> field.</p>
+<p>Please note that SV-calling methods may store this information under different names. For instance, <code>INFO/SUPPORT</code> might be used for <code>RE</code>, and <code>FORMAT/DP</code> for <code>DP</code>. The sequencing depth might also be provided separately for REF and ALT alleles (e.g., <code>FORMAT/DR</code> and <code>FORMAT/DV</code>). Additionally, the same type of SV might have different names in different methods (e.g., <code>DUP:TANDEM</code> vs <code>DUP</code>). All the harmonized information will be stored in the <code>INFO</code> field.</p>
 <p><strong> Sniffles2 (ver 2.0.6) </strong></p>
 <pre><code class="language-bash">harmonisv harmonize \
 -i HG002.minimap2.sniffles.vcf \             # input VCF
@@ -264,6 +286,7 @@
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
         <a href="../harmonize_header/" class="btn btn-neutral float-left" title="harmonize-header"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../SV_analysis/represent/" class="btn btn-neutral float-right" title="represent">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -292,6 +315,8 @@
     
       <span><a href="../harmonize_header/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
+    
+      <span><a href="../../SV_analysis/represent/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>

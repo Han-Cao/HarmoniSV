@@ -91,7 +91,7 @@
               </ul>
               <p class="caption"><span class="caption-text">SV analysis</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="" href="../../SV_analysis/represent.md">represent</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../SV_analysis/represent/">represent</a>
                   </li>
                   <li class="toctree-l1"><a class="" href="../../SV_analysis/genotype.md">genotype</a>
                   </li>
@@ -127,11 +127,10 @@
               
                 <h1 id="harmonize-header"><em>harmonize-header</em></h1>
 <p>Harmonize VCF headers</p>
-<p><strong><em> Last updated: 2023-10-03 </em></strong></p>
+<p><strong><em> Last updated: 2023-12-05 </em></strong></p>
 <h2 id="input">Input</h2>
 <ul>
-<li><strong>VCF</strong>: any VCF/BCF files following the VCF specification.</li>
-<li><strong>ID format</strong>: no requirements</li>
+<li><strong>VCF</strong>: Any VCF/BCF files following the VCF specification.</li>
 </ul>
 <h2 id="output">Output</h2>
 <ul>
@@ -141,7 +140,7 @@
 <pre><code class="language-bash">harmonisv harmonize-header [options] -i &lt;input_vcf&gt; -o &lt;output_header&gt; 
 </code></pre>
 <h2 id="examples">Examples</h2>
-<p>The VCF headers from cuteSV, sniffles, and svim are harmonized. If one header occurs in more than one VCF, the priority is: sniffles &gt; cuteSV &gt; svim.</p>
+<p>In this example, the VCF headers from cuteSV, sniffles, and svim are harmonized. If one header occurs in more than one VCF, the priority is: sniffles &gt; cuteSV &gt; svim (based on the input order).</p>
 <pre><code class="language-bash">harmonisv harmonize-header \
 -i HG002.minimap2.cuteSV.vcf,HG002.minimap2.sniffles.vcf,HG002.minimap2.svim.vcf \
 -o harmonized_header.txt \

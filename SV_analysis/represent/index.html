@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://han-cao.github.io/HarmoniSV/SV_analysis/represent/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>represent - HarmoniSV</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../css/custom.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "represent";
+        var mkdocs_page_input_path = "SV_analysis/represent.md";
+        var mkdocs_page_url = "/HarmoniSV/SV_analysis/represent/";
+      </script>
+    
+    <script src="../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> HarmoniSV
+        </a>
+        <div class="version">
+          0.1.0
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Introduction</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../quick_start/">Quick start</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../tutorial/">Tutorial</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../command_list/">Command list</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">VCF manipulation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../VCF_manipulation/harmonize_header/">harmonize-header</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../VCF_manipulation/harmonize/">harmonize</a>
+                  </li>
+                  <li class="toctree-l1"><a class="" href="../../VCF_manipulation/sample2pop.md">sample2pop</a>
+                  </li>
+                  <li class="toctree-l1"><a class="" href="../../VCF_manipulation/intersect.md">intersect</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">SV analysis</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">represent</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#input">Input</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#output">Output</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#representative-sv">Representative SV</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#example">Example</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#1-select-representative-svs-from-svs-merged-across-samples-and-methods">1. Select representative SVs from SVs merged across samples and methods</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#2-remove-duplicated-svs-within-the-same-sample-and-method">2. Remove duplicated SVs within the same sample and method</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#arguments">Arguments</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#inputoutput-arguments">Input/Output arguments:</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#representative-sv-selection-arguments">Representative SV selection arguments:</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="" href="../genotype.md">genotype</a>
+                  </li>
+                  <li class="toctree-l1"><a class="" href="../filter.md">filter</a>
+                  </li>
+                  <li class="toctree-l1"><a class="" href="../concordance.md">concordance</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">HarmoniSV</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>SV analysis &raquo;</li>
+      <li>represent</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/Han-Cao/HarmoniSV/docs/SV_analysis/represent.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="harmonize"><em>harmonize</em></h1>
+<p>Select the representative SV from merged SVs</p>
+<p><strong><em> Last updated: 2023-12-05 </em></strong></p>
+<h2 id="input">Input</h2>
+<ul>
+<li><strong>VCF</strong>: <ul>
+<li><strong>Format</strong>: bi-allelic VCF/BCF files following the VCF specification</li>
+<li><strong>Required INFO</strong>: <code>SVTYPE</code>, <code>SVLEN</code>, <code>AC</code></li>
+<li><strong>Required ID</strong>: unique ID across all input VCFs</li>
+</ul>
+</li>
+<li><strong>Manifest file</strong>:<ul>
+<li><strong>Format</strong>: one VCF per line</li>
+</ul>
+</li>
+<li><strong>SV merging results</strong>:<ul>
+<li><strong>Format</strong>: each line is comma-separated list of IDs of merged SVs, or the ID of unique SVs. Any SV merging method can be used. Particularly, we have tested <a href="https://github.com/mkirsche/Jasmine">Jasmine</a> in the workflow.</li>
+</ul>
+</li>
+</ul>
+<h2 id="output">Output</h2>
+<ul>
+<li><strong>VCF</strong>: harmonized VCF/BCF files.</li>
+<li><strong>ID format</strong>: <code>{PREFIX}.{SVTYPE}.{NUMBER}</code> if <code>--rename-id --id-prefix PREFIX</code> is specified, otherwise the same as input.</li>
+</ul>
+<h2 id="usage">Usage</h2>
+<pre><code class="language-bash">harmonisv represent [options] -i &lt;input_vcf&gt; -o &lt;output_vcf&gt; --merge &lt;merge_file&gt;
+harmonisv represent [options] -f &lt;manifest&gt; -o &lt;output_vcf&gt; --merge &lt;merge_file&gt;
+</code></pre>
+<h2 id="representative-sv">Representative SV</h2>
+<p>SV calling results can vary significantly across different methods or samples. Therefore, merging SVs across samples and methods is a common practice to identify non-redundant SVs. Once the SVs are merged, the position, length, and alleles of the merged SV need to be determined. The represent command is used to select the representative SV from the merged SVs based on one of the following criteria:</p>
+<ul>
+<li><code>--by-max TAG</code>: This option selects the SV with the maximum value of <code>INFO/TAG</code>.</li>
+<li><code>--by-freq</code>: This option selects the SV with the maximum frequency of <code>POS</code> and <code>SVLEN</code>. If more than one SV has the same frequency, it selects the one closest to the average <code>POS</code> and <code>SVLEN</code>.</li>
+</ul>
+<h2 id="example">Example</h2>
+<h5 id="1-select-representative-svs-from-svs-merged-across-samples-and-methods">1. Select representative SVs from SVs merged across samples and methods</h5>
+<p>In this example, we will first use <a href="https://github.com/mkirsche/Jasmine">Jasmine</a> to merge SVs across samples and methods, and then use <code>harmonisv represent</code> to select the representative SV based on the prevalence of SVs' positions and lengths.</p>
+<pre><code class="language-bash">
+# prepare manifest file
+for vcf in SampleA.Method1.vcf SampleA.Method2.vcf SampleB.Method1.vcf SampleB.Method2.vcf; do
+    echo ${vcf}
+done &gt; vcf_list.txt
+
+# SV merging across samples and methods
+jasmine \
+file_list=vcf_list.txt \
+out_file=merged.vcf \
+--keep_var_ids \
+--ignore_strand 
+
+# extract SV merging results
+bcftools query -f '%IDLIST\n' merged.vcf &gt; merge.txt
+
+# Select representative SV based on the frequency of POS and SVLEN
+harmonisv represent \
+-f vcf_list.txt \
+-o representative.vcf \
+--merge merge.txt \
+--by-freq \
+--id-prefix Merged \            # rename output SV ID as Merged.SVTYPE.NUMBER
+--save-id  \                    # save merged SVs to INFO/ID_LIST
+--min-len-input 35 \            # only SVs with SVLEN &lt; 35 are considered when selecting representative SV
+--min-len-output 50             # drop representative SVs with SVLEN &lt; 50
+</code></pre>
+<h5 id="2-remove-duplicated-svs-within-the-same-sample-and-method">2. Remove duplicated SVs within the same sample and method</h5>
+<p>SV calling methods may produce duplicated SVs within the same sequencing data. This example will first use <a href="https://github.com/mkirsche/Jasmine">Jasmine</a> to merge SVs within the same sample and method, and then use <code>harmonisv represent</code> to select the representative SV based on the maximum value of reads supporting the SV.</p>
+<pre><code class="language-bash"># SV merging within the same sample and method
+jasmine \
+file_list=input.vcf \
+out_file=jasmine.vcf \
+--comma_filelist \
+max_dist=200 \
+--allow_intrasample \
+--nonlinear_dist \
+--ignore_strand \
+--keep_var_ids
+
+# extract SV merging results
+bcftools query -f '%INTRASAMPLE_IDLIST\n' jasmine.vcf &gt; dup_sv.txt
+
+# Select representative SV based on the maximum value of reads supporting the SV (INFO/RE)
+harmonisv represent \
+-i input.vcf \
+-o dedup.vcf \
+--merge dup_sv.txt \
+--by-max RE \
+--min-len-input 30 \
+--min-len-output 30
+</code></pre>
+<h2 id="arguments">Arguments</h2>
+<h4 id="inputoutput-arguments">Input/Output arguments:</h4>
+<dl>
+<dt>-i, --invcf VCF</dt>
+<dd>input VCF</dd>
+<dt>-f, --manifest TSV</dt>
+<dd>manifest file, one VCF per line</dd>
+<dt>-o, --outvcf VCF</dt>
+<dd>output VCF</dd>
+<dt>--merge FILE</dt>
+<dd>SV merging results, each line is a comma-separated list of IDs of merged SVs, or the ID of unique SVs</dd>
+<dt>-r, --region CHR</dt>
+<dd>genomic region to work on (requires VCF with index)</dd>
+</dl>
+<h4 id="representative-sv-selection-arguments">Representative SV selection arguments:</h4>
+<dl>
+<dt>--id-prefix ID</dt>
+<dd>Rename output SV ID as PREFIX.SVTYPE.NUMBER</dd>
+<dt>--by-max TAG</dt>
+<dd>Select representative SV by maximum INFO/TAG value</dd>
+<dt>--by-freq</dt>
+<dd>Select representative SV by frequency of POS, SVLEN, if &gt;1 SVs have same frequency, select the one closest to average POS, SVLEN</dd>
+<dt>--save-id</dt>
+<dd>Save original IDs to INFO/ID_LIST</dd>
+<dt>--keep-hom-ref</dt>
+<dd>Keep SVs with AC=0 before selecting representative SV (Default: False)</dd>
+<dt>--min-len-input N</dt>
+<dd>Remove SVLEN &lt; min_len_input before selecting representative SV (Default: 35)</dd>
+<dt>--min-len-output N</dt>
+<dd>Remove SVLEN &lt; min_len_output from output (Default: 50)</dd>
+</dl>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../../VCF_manipulation/harmonize/" class="btn btn-neutral float-left" title="harmonize"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/Han-Cao/HarmoniSV/" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../../VCF_manipulation/harmonize/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme_extra.js" defer></script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
