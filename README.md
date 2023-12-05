@@ -1,7 +1,7 @@
 # HarmoniSV
 A toolkit to harmonize and filter structural variations across methods and samples.
 
-**Important**: The document is under development. We have tested HarmoniSV to perform population-scale SV calling using SV calls from `Sniffles2`, `cuteSV`, and `SVIM`. It should be able to work with any SV callers whose output follows VCF specification. Please open an issue for questions or bug reports.
+**Important**: The [document] is under construction. We have tested HarmoniSV to perform population-scale SV calling using SV calls from `Sniffles2`, `cuteSV`, and `SVIM`. It should be able to work with any SV callers whose output follows VCF specification. Please open an issue for questions or bug reports.
 
 ## Features
 - Harmonize SVs discovered by different SV calling methods
@@ -60,3 +60,5 @@ For help on a specific command, run:
     harmonisv <command> -h
 
 ```
+
+[document]: https://han-cao.github.io/HarmoniSV/
