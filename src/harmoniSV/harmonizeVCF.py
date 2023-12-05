@@ -11,7 +11,7 @@ import functools
 import logging
 import os
 
-from utils import read_vcf, OutVcf, IdGenerator, parse_cmdargs
+from utils import read_vcf, OutVcf, IdGenerator, ProgressLogger, parse_cmdargs
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv harmonize",
@@ -445,6 +445,7 @@ def harmonizeVCF_main(cmdargs) -> None:
 
     # write new vcf
     outvcf = OutVcf(args.outvcf, header=new_header)
+    progress = ProgressLogger(item='variants', verbosity=2000)
 
     for old_var in invcf.fetch():
         # check ID and SVTYPE
@@ -510,7 +511,9 @@ def harmonizeVCF_main(cmdargs) -> None:
                     break
 
         outvcf.write(new_var)
+        progress.log()
 
+    progress.finish()
     invcf.close()
     outvcf.close()
 

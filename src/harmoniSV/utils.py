@@ -55,9 +55,10 @@ def read_vcf(file_vcf: str, check_id: bool=False, check_svtype: bool=False, chec
 
 class OutVcf:
     """ Class to write vcf file """
-    def __init__(self, file_vcf: str, header: pysam.VariantHeader, verbosity: int=2000) -> None:
+    def __init__(self, file_vcf: str, header: pysam.VariantHeader) -> None:
         self.file_vcf = file_vcf
         self.header = header
+        self.logger = logging.getLogger(__name__)
 
         # set output mode
         if (file_vcf.endswith('vcf.gz') or file_vcf.endswith('vcf.bgz')):
@@ -73,11 +74,6 @@ class OutVcf:
         # open file
         self.f = open(self.file_out, 'w')
 
-        # set log
-        self.logger = logging.getLogger(__name__)
-        self.verbosity = verbosity
-        self.counter = 0
-
         # write header
         self.f.write(str(self.header))
     
@@ -85,16 +81,11 @@ class OutVcf:
     def write(self, record: pysam.VariantRecord):
         """ Write a variant record """
         self.f.write(str(record))
-        self.counter += 1
-
-        if self.counter % self.verbosity == 0:
-            self.logger.info(f"{self.counter} variants processed")
 
 
     def close(self):
         """ Close file """
         self.f.close()
-        self.logger.info(f"{self.counter} variants processed")
 
         if self.flag == 'bgz':
             pysam.bcftools.view('--no-version', '-Oz', '-o', self.file_vcf, self.file_out, catch_stdout=False)
@@ -106,7 +97,54 @@ class OutVcf:
         self.logger.info(f"Write output to {self.file_vcf}")        
 
 
+def read_manifest(file_manifest: str, default_info: list=[]) -> pd.DataFrame:
+    """
+    Read manifest file (tab-delimited without header)
+
+    Format:
+    Column 1: <file_vcf>, one file per line
+    Column 2 (optional): <info_tag>, comma separated list of INFO tags to be extracted, all if not specified
+    """
+    logger = logging.getLogger(__name__)
+
+    df_manifest = pd.read_csv(file_manifest, sep='\t', header=None, dtype=str)
+
+    # check format
+    if df_manifest.shape[1] == 1:
+        df_manifest.columns = ['file']
+    elif df_manifest.shape[1] == 2:
+        df_manifest.columns = ['file', 'info']
+        df_manifest['info'] = df_manifest['info'].str.split(',')
+    else:
+        logger.error(f"Invalid manifest file, a tab-delimited file without header is required. Column 1: vcf file, Column 2 (optional): comma separated list of INFO tags to be extracted")
+        raise SystemExit()
+
+    if 'info' not in df_manifest.columns:
+        if len(default_info) > 0:
+            df_manifest['info'] = ','.join(default_info)
+            df_manifest['info'] = df_manifest['info'].str.split(',')
+        else:
+            df_manifest['info'] = 'all'
+    
+    logger.info(f"Found {df_manifest.shape[0]} VCFs from manifest file: {file_manifest}")
+
+    return df_manifest
         
+
+def manifest_to_df(df_manifest: pd.DataFrame, region: str=None) -> pd.DataFrame:
+    """ Read VCFs in the manifest file and convert to dataframe """
+
+    df_all = pd.DataFrame()
+    for i, row in df_manifest.iterrows():
+        file_vcf = row['file']
+        info = row['info']
+        vcf = read_vcf(file_vcf)
+        df_vcf = vcf_to_df(vcf, info, region)
+        df_vcf['file_idx'] = i
+        df_all = df_all.append(df_vcf)
+    
+    return df_all
+
 
 class IdGenerator:
     """ Generate new SV IDs """
@@ -226,3 +264,20 @@ def parse_cmdargs(parser: argparse.ArgumentParser, cmdargs: list) -> argparse.Na
     # print arguments
     print(f'Command: {parser.prog} {" ".join(cmdargs)}', file=sys.stderr)
     return args
+
+
+class ProgressLogger:
+    """Log progress"""
+    def __init__(self, item: str, verbosity: int=1000) -> None:
+        self.counter = 0
+        self.verbosity = verbosity
+        self.item = item
+        self.logger = logging.getLogger(__name__)
+    
+    def log(self):
+        self.counter += 1
+        if self.counter % self.verbosity == 0:
+            self.logger.info(f"{self.counter} {self.item} processed")
+
+    def finish(self):
+        self.logger.info(f"{self.counter} {self.item} processed")
