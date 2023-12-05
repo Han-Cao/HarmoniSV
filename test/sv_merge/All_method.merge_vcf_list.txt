@@ -1,0 +1,6 @@
+output/harmonize//HG002.NGMLR.cuteSV.harmonized.vcf
+output/harmonize//HG002.NGMLR.sniffles.harmonized.vcf
+output/harmonize//HG002.NGMLR.svim.harmonized.vcf
+output/harmonize//HG002.minimap2.cuteSV.harmonized.vcf
+output/harmonize//HG002.minimap2.sniffles.harmonized.vcf
+output/harmonize//HG002.minimap2.svim.harmonized.vcf
