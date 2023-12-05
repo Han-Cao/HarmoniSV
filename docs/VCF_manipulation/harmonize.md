@@ -2,15 +2,16 @@
 
 Harmonize SV VCFs across samples and SV calling methods
 
-*** Last updated: 2023-12-04 ***
+*** Last updated: 2023-12-05 ***
 
 ## Input
-- **VCF**: single-sample, bi-allelic, and SV-only VCF/BCF files following the VCF specification. The type of SVs should be specified in the `INFO` field (not necessarily named as `SVTYPE`).
-- **ID format**: no requirements
+- **VCF**: 
+    - **Format**: bi-allelic VCF/BCF files following the VCF specification
+    - **Required INFO**: `SVTYPE`, if other name is used, specify by `--svtype`
 
 ## Output
 - **VCF**: harmonized VCF/BCF files.
-- **ID format**: `{PREFIX}.{SVTYPE}.{NUMBER}` if `--rename-id --id-prefix PREFIX` is specified, otherwise the same as input.
+    - **ID format**: `{PREFIX}.{SVTYPE}.{NUMBER}` if `--rename-id --id-prefix PREFIX` is specified, otherwise the same as input.
 
 ## Usage
 
@@ -33,9 +34,29 @@ If the SV types are not in the above list, use `--INS`, `--DEL`, `--DUP`, `--INV
 
 To disable the check, use `--no-check`.
 
+## VCF headers
+The VCF headers produced by different SV calling methods are usually not compatable. It is necessary to have a unified VCF header for downstream analysis. If only INFO tags from the original VCFs will be used, one simple method is to use `harmonisv harmonize-header` to combine the headers from all VCFs (see [harmonize-header]). However, if any new INFO tags will be added / renamed, please use `--header-str` to specify them.
+
+For example, the following command will combine the headers of method A, B, and C, and add `INFO/STRANDS` header.
+
+``` bash
+harmonisv harmonize-header \
+-i A.vcf,B.vcf,C.vcf \
+-o harmonized_header.txt \
+
+for vcf in A.vcf B.vcf C.vcf; do
+    harmonisv harmonize \
+    -i $vcf \
+    -o harmonized.$vcf \
+    --header harmonized_header.txt \
+    --header-str 'STRANDS,1,String,Strand orientation of supporting reads'
+done
+```
+
+
 ## Examples
 
-Below commands will rename variant ID, normalize SVTYPE, and extract the basic SV calling information:
+In this example, we will rename variant ID, normalize SVTYPE, and extract the basic SV calling information:
 
 - SVTYPE
 - SVLEN
@@ -44,7 +65,7 @@ Below commands will rename variant ID, normalize SVTYPE, and extract the basic S
 - DP (sequencing depth)
 - RE (number of reads supporting the SV)
 
-Please note that SV-calling methods may store this information under different names. For instance, `INFO/SUPPORT` might be used for `RE`, and `FORMAT/DP` for `DP`. The sequencing depth might also be provided separately for REF and ALT alleles (e.g., `FORMAT/DR` and `FORMAT/DV`). Additionally, the same type of SV might have different names in different methods (e.g., `DUP:TANDEM` vs `DUP`). We will store the harmonized information in the `INFO` field.
+Please note that SV-calling methods may store this information under different names. For instance, `INFO/SUPPORT` might be used for `RE`, and `FORMAT/DP` for `DP`. The sequencing depth might also be provided separately for REF and ALT alleles (e.g., `FORMAT/DR` and `FORMAT/DV`). Additionally, the same type of SV might have different names in different methods (e.g., `DUP:TANDEM` vs `DUP`). All the harmonized information will be stored in the `INFO` field.
 
 ** Sniffles2 (ver 2.0.6) **
 
@@ -163,3 +184,7 @@ Particularly, `harmonisv harmonize -i input.vcf -o output.vcf --keep-all --no-AC
 
 --no-check
 :   Disable check and filter on variant ID and SVTYPE (default: False)
+
+
+
+[harmonize-header]: harmonize_header.md

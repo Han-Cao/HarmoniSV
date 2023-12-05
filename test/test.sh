@@ -30,10 +30,11 @@ ls raw/*sniffles* | while read vcf; do
     $harmonisv harmonize \
     -i $vcf \
     -o ${dir_harmonize}/${name}.harmonized.vcf \
-    --info SVTYPE,SVLEN,END \
+    --info SVTYPE,SVLEN,END,STRANDS=STRAND \
     --format-to-info RE=DV \
     --format-to-info-sum DP=DR,DP=DV \
     --header $dir_header/harmonized_header.txt \
+    --header-str 'STRANDS,1,String,Strand orientation of supporting reads' \
     --id-prefix $name \
     --rename-id
 
@@ -51,6 +52,7 @@ ls raw/*svim* | while read vcf; do
     --format-to-info DP=DP \
     --DUP DUP,DUP:TANDEM,DUP:INT \
     --header $dir_header/harmonized_header.txt \
+    --header-str 'STRANDS,1,String,Strand orientation of supporting reads' \
     --id-prefix $name \
     --rename-id 2> ${dir_harmonize}/${name}.harmonized.vcf.log
 done
@@ -66,6 +68,7 @@ ls raw/*cuteSV* | while read vcf; do
     --info SVTYPE,SVLEN,END,RE \
     --format-to-info-sum DP=DR,DP=DV \
     --header $dir_header/harmonized_header.txt \
+    --header-str 'STRANDS,1,String,Strand orientation of supporting reads' \
     --id-prefix $name \
     --rename-id
 done

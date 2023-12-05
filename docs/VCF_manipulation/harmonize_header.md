@@ -2,11 +2,11 @@
 
 Harmonize VCF headers
 
-*** Last updated: 2023-10-03 ***
+*** Last updated: 2023-12-05 ***
 
 ## Input
-- **VCF**: any VCF/BCF files following the VCF specification.
-- **ID format**: no requirements
+- **VCF**: Any VCF/BCF files following the VCF specification.
+
 
 ## Output
 - **VCF header**: harmonized VCF header containing all header records of input VCFs
@@ -20,7 +20,7 @@ harmonisv harmonize-header [options] -i <input_vcf> -o <output_header>
 
 ## Examples
 
-The VCF headers from cuteSV, sniffles, and svim are harmonized. If one header occurs in more than one VCF, the priority is: sniffles > cuteSV > svim.
+In this example, the VCF headers from cuteSV, sniffles, and svim are harmonized. If one header occurs in more than one VCF, the priority is: sniffles > cuteSV > svim (based on the input order).
 
 ``` bash
 harmonisv harmonize-header \
