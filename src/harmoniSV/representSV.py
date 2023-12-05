@@ -21,29 +21,29 @@ io_arg = parser.add_argument_group('Input/Output arguments')
 io_arg.add_argument("-i", "--invcf", metavar="vcf", type=str, required=False,
                     help="input vcf")
 io_arg.add_argument("-f", "--manifest", metavar="tsv", type=str, required=False,
-                    help="manifest file, each line represent a non-overlapping SV, merged SVs separated by comma in 1 line")
+                    help="manifest file, one VCF per line")
 io_arg.add_argument("-o", "--outvcf", metavar="vcf", type=str, required=True,
                     help="output vcf")
 io_arg.add_argument("--merge", metavar="FILE", type=str, required=True,
-                    help="SV merge results, each line represent a non-overlapping SV, merged SVs separated by comma in 1 line")
+                    help="SV merging results, each line is comma-separated list of IDs of merged SVs, or the ID of unique SVs")
 io_arg.add_argument("-r", "--region", metavar="chr", type=str, required=False,
                     help="genomic region to work on (require vcf with index)")
 
 represent_arg = parser.add_argument_group('Representative SV selection arguments')
 represent_arg.add_argument("--id-prefix", metavar="ID", type=str, required=False,
-                           help="Rename output SV ID as PREFIX.SVTYPE.No")
+                           help="Rename output SV ID as PREFIX.SVTYPE.NUMBER")
 represent_arg.add_argument("--by-max", metavar="TAG", type=str, required=False,
-                           help="Select representative SV by maximum TAG in sv-info file")
+                           help="Select representative SV by maximum INFO/TAG value")
 represent_arg.add_argument("--by-freq", action="store_true", default=False,
                            help="Select representative SV by frequency of POS, SVLEN, if >1 SVs have same frequency, select the one closest to average POS, SVLEN")
 represent_arg.add_argument("--save-id", action="store_true", default=False, required=False,
                            help="Save original IDs to INFO/ID_LIST")
 represent_arg.add_argument("--keep-hom-ref", action="store_true", default=False, required=False,
-                           help="Keep hom_ref SV before selecting representative SV (Default: False)")
+                           help="Keep SVs with AC=0 before selecting representative SV (Default: False)")
 represent_arg.add_argument("--min-len-input", metavar="N", type=int, required=False, default=35,
                            help="Remove SVLEN < min_len_input before selecting representative SV (Default: 35)")
 represent_arg.add_argument("--min-len-output", metavar="N", type=int, required=False, default=50,
-                           help="Remove SVLEN < min_len_output after selecting representative SV (Default: 50)")
+                           help="Remove SVLEN < min_len_output from output (Default: 50)")
 
 optional_arg = parser.add_argument_group('optional arguments')
 optional_arg.add_argument("-h", "--help", action='help', help='show this help message and exit')
