@@ -9,7 +9,7 @@ Select the representative SV from merged SVs
     - **Format**: bi-allelic VCF/BCF files following the VCF specification
     - **Required INFO**: `SVTYPE`, `SVLEN`, `AC`
     - **Required ID**: unique ID across all input VCFs
-- **Manifest file**:
+- **VCF file list**:
     - **Format**: one VCF per line
 - **SV merging results**:
     - **Format**: each line is comma-separated list of IDs of merged SVs, or the ID of unique SVs. Any SV merging method can be used. Particularly, we have tested [Jasmine] in the workflow.
@@ -22,7 +22,7 @@ Select the representative SV from merged SVs
 
 ``` bash
 harmonisv represent [options] -i <input_vcf> -o <output_vcf> --merge <merge_file>
-harmonisv represent [options] -f <manifest> -o <output_vcf> --merge <merge_file>
+harmonisv represent [options] -f <file_list> -o <output_vcf> --merge <merge_file>
 ```
 
 ## Representative SV
@@ -38,7 +38,7 @@ In this example, we will first use [Jasmine] to merge SVs across samples and met
 
 ``` bash
 
-# prepare manifest file
+# prepare VCF file list
 for vcf in SampleA.Method1.vcf SampleA.Method2.vcf SampleB.Method1.vcf SampleB.Method2.vcf; do
     echo ${vcf}
 done > vcf_list.txt
@@ -102,8 +102,8 @@ harmonisv represent \
 -i, --invcf VCF
 :   input VCF
 
--f, --manifest TSV
-:   manifest file, one VCF per line
+-f, --file-list TSV
+:   list of VCF files, one VCF per line
 
 -o, --outvcf VCF
 :   output VCF
@@ -115,7 +115,7 @@ harmonisv represent \
 :   genomic region to work on (requires VCF with index)
 
 #### Representative SV selection arguments:
---id-prefix ID
+--id-prefix PREFIX
 :   Rename output SV ID as PREFIX.SVTYPE.NUMBER
 
 --by-max TAG

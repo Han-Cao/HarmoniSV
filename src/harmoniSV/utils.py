@@ -104,7 +104,7 @@ class OutVcf:
             self.logger.info(f"Write output to {self.file_vcf}")        
 
 
-def read_manifest(file_manifest: str, default_info: list=[]) -> pd.DataFrame:
+def read_manifest(file_manifest: str, header, default_info: list=[]) -> pd.DataFrame:
     """
     Read manifest file (tab-delimited without header)
 
@@ -112,8 +112,9 @@ def read_manifest(file_manifest: str, default_info: list=[]) -> pd.DataFrame:
     Column 1: <file_vcf>, one file per line
     Column 2 (optional): <info_tag>, comma separated list of INFO tags to be extracted, all if not specified
     """
-
-    df_manifest = pd.read_csv(file_manifest, sep='\t', header=None, dtype=str)
+    # header = None for file list
+    # header = 0 for manifest file
+    df_manifest = pd.read_csv(file_manifest, sep='\t', header=header, dtype=str)
 
     # check format
     if df_manifest.shape[1] == 1:

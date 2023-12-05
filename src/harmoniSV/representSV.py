@@ -18,11 +18,11 @@ parser = argparse.ArgumentParser(prog="harmonisv represent",
                                  description="Select the representative SV from merged SVs",
                                  add_help=False)
 io_arg = parser.add_argument_group('Input/Output arguments')
-io_arg.add_argument("-i", "--invcf", metavar="vcf", type=str, required=False,
+io_arg.add_argument("-i", "--invcf", metavar="VCF", type=str, required=False,
                     help="input vcf")
-io_arg.add_argument("-f", "--manifest", metavar="tsv", type=str, required=False,
-                    help="manifest file, one VCF per line")
-io_arg.add_argument("-o", "--outvcf", metavar="vcf", type=str, required=True,
+io_arg.add_argument("-f", "--file-list", metavar="TSV", type=str, required=False,
+                    help="list of VCF files, one VCF per line")
+io_arg.add_argument("-o", "--outvcf", metavar="VCF", type=str, required=True,
                     help="output vcf")
 io_arg.add_argument("--merge", metavar="FILE", type=str, required=True,
                     help="SV merging results, each line is comma-separated list of IDs of merged SVs, or the ID of unique SVs")
@@ -30,7 +30,7 @@ io_arg.add_argument("-r", "--region", metavar="chr", type=str, required=False,
                     help="genomic region to work on (require vcf with index)")
 
 represent_arg = parser.add_argument_group('Representative SV selection arguments')
-represent_arg.add_argument("--id-prefix", metavar="ID", type=str, required=False,
+represent_arg.add_argument("--id-prefix", metavar="PREFIX", type=str, required=False,
                            help="Rename output SV ID as PREFIX.SVTYPE.NUMBER")
 represent_arg.add_argument("--by-max", metavar="TAG", type=str, required=False,
                            help="Select representative SV by maximum INFO/TAG value")
@@ -336,9 +336,9 @@ def representSV_main(cmdargs) -> None:
         info.append(args.by_max)
 
     # read input files
-    if args.manifest is not None:
-        logger.info(f"Read manifest file: {args.manifest}")
-        df_manifest = read_manifest(args.manifest, info)
+    if args.file_list is not None:
+        logger.info(f"Read VCF file list: {args.file_list}")
+        df_manifest = read_manifest(args.file_list, header=None, default_info=info)
     elif args.invcf is not None:
         logger.info(f"Read input vcf: {args.invcf}")
         df_manifest = pd.DataFrame({'file': [args.invcf], 'info': [info]})
