@@ -1,4 +1,4 @@
-# *harmonize*
+# *represent*
 
 Select the representative SV from merged SVs
 

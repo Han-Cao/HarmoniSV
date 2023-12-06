@@ -429,5 +429,4 @@ def representSV_main(cmdargs) -> None:
     os.remove(f'{args.outvcf}.tmp')
     os.remove(f'{args.outvcf}.tmp.sort')
     
-
-
+    logger.info("Done")

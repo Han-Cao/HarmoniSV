@@ -520,3 +520,4 @@ def harmonizeVCF_main(cmdargs) -> None:
     if args.header is not None:
         os.remove(file_reheader_vcf)
 
+    logger.info("Done")
