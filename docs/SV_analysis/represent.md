@@ -26,7 +26,7 @@ harmonisv represent [options] -f <file_list> -o <output_vcf> --merge <merge_file
 ```
 
 ## Representative SV
-SV calling results can vary significantly across different methods or samples. Therefore, merging SVs across samples and methods is a common practice to identify non-redundant SVs. Once the SVs are merged, the position, length, and alleles of the merged SV need to be determined. The represent command is used to select the representative SV from the merged SVs based on one of the following criteria:
+SV calling results can vary significantly across different methods or samples. Therefore, merging SVs across samples and methods is a common practice to identify non-redundant SVs. Once the SVs are merged, the position, length, and alleles of the merged SV can be determined based on the representative SV. The `represent` command is used to select the representative SV from the merged SVs using one of the following criteria:
 
 - `--by-max TAG`: This option selects the SV with the maximum value of `INFO/TAG`.
 - `--by-freq`: This option selects the SV with the maximum frequency of `POS` and `SVLEN`. If more than one SV has the same frequency, it selects the one closest to the average `POS` and `SVLEN`.
@@ -34,7 +34,7 @@ SV calling results can vary significantly across different methods or samples. T
 ## Example
 
 ##### 1. Select representative SVs from SVs merged across samples and methods
-In this example, we will first use [Jasmine] to merge SVs across samples and methods, and then use `harmonisv represent` to select the representative SV based on the prevalence of SVs' positions and lengths.
+In this example, we will first use [Jasmine] to merge SVs across samples and methods, and then select the representative SV based on the prevalence of SVs' positions and lengths.
 
 ``` bash
 
@@ -68,7 +68,7 @@ harmonisv represent \
 
 ##### 2. Remove duplicated SVs within the same sample and method
 
-SV calling methods may produce duplicated SVs within the same sequencing data. This example will first use [Jasmine] to merge SVs within the same sample and method, and then use `harmonisv represent` to select the representative SV based on the maximum value of reads supporting the SV.
+SV calling methods may produce duplicated SVs within the same sequencing data. This example will first use [Jasmine] to merge SVs within the same sample and method, and then select the representative SV based on the maximum value of reads supporting the SV.
 
 
 ``` bash
