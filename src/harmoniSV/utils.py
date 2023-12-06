@@ -110,35 +110,41 @@ def read_manifest(file_manifest: str, header, default_info: list=[]) -> pd.DataF
 
     Format:
     Column 1: <file_vcf>, one file per line
-    Column 2 (optional): <info_tag>, comma separated list of INFO tags to be extracted, all if not specified
+    Column 2 (optional): <info_tag>, comma separated list of additional INFO tags to be extracted, all if not specified
     """
+
+    logger = logging.getLogger(__name__)
+
     # header = None for file list
     # header = 0 for manifest file
     df_manifest = pd.read_csv(file_manifest, sep='\t', header=header, dtype=str)
 
-    # check format
-    if df_manifest.shape[1] == 1:
-        df_manifest.columns = ['file']
-    elif df_manifest.shape[1] == 2:
-        df_manifest.columns = ['file', 'info']
-        df_manifest['info'] = df_manifest['info'].str.split(',')
-    else:
-        logger = logging.getLogger(__name__)
-        logger.error(f"Invalid manifest file, a tab-delimited file without header is required. Column 1: vcf file, Column 2 (optional): comma separated list of INFO tags to be extracted")
-        raise SystemExit()
-
+    # add header if not exist
+    if header is None:
+        if df_manifest.shape[1] == 1:
+            df_manifest.columns = ['file']
+        else:
+            logger.error(f"Invalid file list, please make sure there is only one column without header")
+            raise SystemExit()
+        
+    # add info column if not exist
     if 'info' not in df_manifest.columns:
         if len(default_info) > 0:
             df_manifest['info'] = ','.join(default_info)
             df_manifest['info'] = df_manifest['info'].str.split(',')
         else:
             df_manifest['info'] = 'all'
+    # add default info to info
+    elif len(default_info) > 0:
+        df_manifest['info'] = df_manifest['info'].str.split(',')
+        df_manifest['info'] = df_manifest['info'].apply(lambda x: list(set(x + default_info)))
+
     
     return df_manifest
         
 
 def manifest_to_df(df_manifest: pd.DataFrame, region: str=None) -> pd.DataFrame:
-    """ Read VCFs in the manifest file and convert to dataframe """
+    """ Read VCFs in the manifest file and concat to dataframe """
 
     lst_df = []
     for i, row in df_manifest.iterrows():
