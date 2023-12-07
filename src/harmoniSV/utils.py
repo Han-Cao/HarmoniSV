@@ -136,9 +136,9 @@ def read_manifest(file_manifest: str, header, default_info: list=[]) -> pd.DataF
             df_manifest['info'] = 'all'
     # add default info to info
     elif len(default_info) > 0:
+        df_manifest['info'].fillna('', inplace=True)
         df_manifest['info'] = df_manifest['info'].str.split(',')
-        df_manifest['info'] = df_manifest['info'].apply(lambda x: list(set(x + default_info)))
-
+        df_manifest['info'] = df_manifest['info'].apply(lambda x: list(set(default_info + x) - set([''])))
     
     return df_manifest
         
