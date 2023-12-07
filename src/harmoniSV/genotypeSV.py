@@ -4,120 +4,195 @@
 # Created: 25/8/2022
 # Author: Han Cao
 
+import logging
+import argparse
+from collections import defaultdict
+
 import pysam
 import pysam.bcftools
-import argparse
 import pandas as pd
 import numpy as np
-import logging
 
-from utils import read_vcf, parse_cmdargs
+from utils import read_vcf, OutVcf, read_manifest, vcf_to_df, ProgressLogger, parse_cmdargs
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv genotype",
                                  description="Genotype SVs across SV genotyping methods",
                                  add_help=False)
-parser.add_argument("-i", "--invcf", metavar="vcf", type=str, required=True,
+io_arg = parser.add_argument_group('Input/Output arguments')
+io_arg.add_argument("-i", "--invcf", metavar="VCF", type=str, required=True,
                     help="input representative SV call set vcf, INFO/ID_LIST store merged SV calls")
-parser.add_argument("-o", "--outvcf", metavar="txt", type=str, required=True,
+io_arg.add_argument("-f", "--manifest", metavar="TSV", type=str, required=True,
+                    help="tab separated manifest file of SV calling results. Column headers should be: file, sample, aligner, caller, info, is_force_call")
+io_arg.add_argument("--sample", metavar="SAMPLE_ID", type=str, required=True,
+                    help="sample ID to be extracted from manifest")
+io_arg.add_argument("-o", "--outvcf", metavar="VCF", type=str, required=True,
                     help="output vcf")
-parser.add_argument("--sample", metavar="SAMPLE_ID", type=str, required=True,
-                    help="sample ID to extract sample record in --sv-info and --method-table")
-parser.add_argument("--method-table", metavar="FILE", type=str, required=True,
-                    help="tab-separated file of bam files for depth quantification. Column headers should be: sample, aligner, caller, bam, min_qual, min_read_len")
-parser.add_argument("--sv-info", metavar="tsv", type=str, required=True,
-                    help="tab-separated file for SV discovery calling INFO. Mandatory fields: ID, CHR, AC, DP, RE")
-parser.add_argument("--force-call-info", metavar="tsv", type=str, required=False,
-                    help="tab-separated file for SV force calling INFO. Mandatory fields: ID, CHR, AC, DP, RE")
-parser.add_argument("--min-dp", metavar="10", type=int, default=10,
-                    help="minimum depth to to genotype SVs as 0/0 if no method has RE>0, otherwise ./.")
-parser.add_argument("--count-missing-dp", action="store_true",
-                    help="count depth of missing SV from bam files")
-parser.add_argument("--homozygous-freq", metavar="0.8", type=float, default=0.8,
-                    help="minimum average allele frequency to genotype as homozygous")
-parser.add_argument("--heterozygous-freq", metavar="0.2", type=float, default=0.2,
-                    help="minimum average allele frequency to genotype as heterozygous")
-parser.add_argument("--genotyping-method", metavar="all", type=str, default="all",
-                    help="methods to be used to determine genotype. Options: 'all', 'force_call', or comma-separated list of methods ('ALIGNER_CALLER'). Default: 'all'")
+io_arg.add_argument("-r", "--region", metavar="chr", type=str, default=None,
+                    help="genomic region to genotype (require indexed VCF)")
+
+genotyping_arg = parser.add_argument_group('Genotyping arguments')
+genotyping_arg.add_argument("--min-dp", metavar="10", type=int, default=10,
+                            help="minimum depth to to genotype SVs as 0/0 if no method has RE>0, otherwise ./.")
+genotyping_arg.add_argument("--homozygous-freq", metavar="0.8", type=float, default=0.8,
+                            help="minimum average allele frequency to genotype as homozygous")
+genotyping_arg.add_argument("--heterozygous-freq", metavar="0.2", type=float, default=0.2,
+                            help="minimum average allele frequency to genotype as heterozygous")
+genotyping_arg.add_argument("--include", metavar="all", type=str, default="all",
+                            help="methods to be used to determine genotype. Options: 'all', 'force_call', or comma-separated list of methods ('ALIGNER_CALLER'). Default: 'all'")
 
 optional_arg = parser.add_argument_group('optional arguments')
 optional_arg.add_argument("-h", "--help", action='help', help='show this help message and exit')
 
 
+class GenotypeManifest:
+    """ Parse manifest table and store metadata """
+    def __init__(self, df_manifest: pd.DataFrame, sample: str, region: str=None) -> None:
+        self.df = df_manifest
+        self.sample = sample
+        self.methods = set()
+        self.force_methods = set()
+        self.discovery_methods = set()
+        self.info_type = {}
+        self._check_manifest()
 
-def read_filter(min_qual: int, min_read_len: int=0):
-    """ Genderate read filter funtion for pysam read_callback filter """
+        # only keep rows of working sample
+        self.df = self.df[self.df["sample"] == sample].copy()
 
-    if(min_read_len == 0):
-        def fn(read):
-            return (read.mapping_quality >= min_qual and 
-                    not (read.flag & (0x4 | 0x100 | 0x200 | 0x400)))
-        
-        return fn
-
-    elif(min_read_len > 0):
-        def fn(read):
-            return (read.mapping_quality >= min_qual and 
-                    not (read.flag & (0x4 | 0x100 | 0x200 | 0x400)) and 
-                    read.infer_query_length() >= min_read_len)
-        return fn
+        # save manifest to dict
+        self.vcf_dict = defaultdict(dict)
+        self.method_dict = defaultdict(dict)
+        for _, row in self.df.iterrows():
+            self._parse_row(row, region)
     
-    else:
+    def _check_manifest(self):
+        """ Check the format of manifest table """
         logger = logging.getLogger(__name__)
-        logger.error("Minimum requred read length must >= 0")
-        raise SystemExit()
-
-
-class method_table:
-    """ Store methods for one sample and corresponding bam file and read filter DP quantification """
-    def __init__(self, file: pd.DataFrame, sample: str) -> None:
-        logger = logging.getLogger(__name__)
-        self.table = pd.read_csv(file, sep="\t")
-        self.table = self.table[self.table["sample"] == sample]
-        if len(self.table.index) == 0:
-            logger.error(f"{sample} is not in the bam table")
+        # check header
+        col_required = set(["file", "sample", "aligner", "caller", "info", "is_force_call"])
+        col_exist = set(self.df.columns)
+        col_missing = col_required - col_exist
+        if len(col_missing) > 0:
+            logger.error(f"Columns {col_missing} are not in the manifest file")
             raise SystemExit()
 
-        # upper case method used in VCF INFO
-        self.table["method"] = self.table["aligner"] + "_" + self.table["caller"]
-        self.table["method"] = self.table["method"].str.upper()
+        # check duplicated method
+        df_count = self.df.groupby(["sample", "aligner", "caller", "is_force_call"]).size().reset_index(name='count')
+        df_dup = df_count[df_count["count"] > 1]
+        if df_dup.shape[0] > 0:
+            logger.error(f"Duplicate method in manifest file: \n {df_dup.to_string()}")
+            raise SystemExit()
 
-        # sample.aligner.caller prefix used in force calling table
-        self.table["prefix"] = self.table["sample"] + "." + self.table["aligner"] + "." + self.table["caller"]
+        # check duplicated file
+        file_count = self.df['file'].value_counts()
+        file_dup = file_count[file_count > 1]
+        if file_dup.shape[0] > 0:
+            logger.error(f"Duplicate file in manifest file: \n {file_dup.tolist()}")
+            raise SystemExit()
+    
+    def _parse_vcf(self, vcf: pysam.VariantFile, info: str, region: str=None) -> pd.DataFrame:
+        """ Read VCF and conver to df """
+
+        df_vcf = vcf_to_df(vcf, info, region)
+        df_vcf.set_index('ID', inplace=True)
+        df_vcf['AF'] = df_vcf['RE'] / df_vcf['DP']
+        # AF = NaN if DP = 0 is correct for single-method genotyping
+        # However, if any other method call this SV (i.e., DP and AF > 0) 
+        # setting AF = 0 means this method does not call this SV
+        # We will always set genotype as ./. if no method call this SV or DP < min_depth
+        # Therefore, setting AF = 0 will not call missing genotype as 0/0
+        df_vcf['AF'] = df_vcf['AF'].fillna(0)
+
+        return df_vcf
+    
+    def _parse_row(self, row: pd.Series, region: str=None) -> None:
+        """ Parse one row of manifest table """
+        aligner = row["aligner"]
+        caller = row["caller"]
+        file = row["file"]
+        info = row["info"]
+        vcf = read_vcf(file, check_sample=True)
+        df_vcf = self._parse_vcf(vcf, info, region)
+        method = f"{aligner}_{caller}".upper()
+        # if AF is not in INFO, add it
+        if "AF" not in info:
+            info.append("AF")
+
+        # append method
+        if method not in self.methods:
+            self.methods.add(method)
+            self.method_dict[method]["aligner"] = aligner
+            self.method_dict[method]["caller"] = caller
+
+        # append file
+        self.vcf_dict[file]["path"] = file
+        self.vcf_dict[file]["method"] = method
+        self.vcf_dict[file]["info"] = info
+        self.vcf_dict[file]["df"] = df_vcf
+        self.vcf_dict[file]["header"] = vcf.header
+
+        # group by is_force_call
+        if row["is_force_call"]:
+            self.force_methods.add(method)
+            self.method_dict[method]["has_force"] = True
+            self.method_dict[method]["force"] = self.vcf_dict[file]
+        else:
+            self.discovery_methods.add(method)
+            self.method_dict[method]["has_discovery"] = True
+            self.method_dict[method]["discovery"] = self.vcf_dict[file]
+            # add SV ID to discovery SV set
+            self.vcf_dict[file]['sv_id'] = set(df_vcf.index)
         
-        self.bam = {}     # dict to store bams of each method
-        self.filter = {}  # dict to store read_filter of each method
-        self.prefix = {}  # dict to store SV ID prefix of each method to search force calling table
-        self.aligner = {} # dict to store aligner of each method
-        self.caller = {}  # dict to store caller of each method
-        for _, row in self.table.iterrows():
-            method = row["method"]
-            self.bam[method] = pysam.AlignmentFile(row["bam"], "rb")
-            self.filter[method] = read_filter(row["min_qual"], row["min_read_len"])
-            self.prefix[method] = row["prefix"]
-            self.aligner[method] = row["aligner"]
-            self.caller[method] = row["caller"]
+        vcf.close()
+
+    def get_aligner(self, method: str) -> str:
+        """ Get aligner of method """
+        return self.method_dict[method]["aligner"]
+    
+    def get_caller(self, method: str) -> str:
+        """ Get caller of method """
+        return self.method_dict[method]["caller"]
+    
+    def has_force(self, method: str) -> bool:
+        """ Check if method has force calling """
+        return self.method_dict[method]["has_force"]
+
+    def has_discovery(self, method: str) -> bool:
+        """ Check if method has discovery calling """
+        return self.method_dict[method]["has_discovery"]
+    
+    def map_discovery(self, id_list: list) -> dict:
+        """ Map discovery SVs to method """
+        res = {}
+        for method in self.discovery_methods:
+            overlap_id = self.method_dict[method]["discovery"]["sv_id"].intersection(id_list)
+            for id in overlap_id:
+                res[id] = method
+        return res
+    
+    def get_info(self, method: str, is_force: bool) -> str:
+        """ Get info of method """
+        if is_force:
+            return self.method_dict[method]["force"]["info"]
+        else:
+            return self.method_dict[method]["discovery"]["info"]
+    
+    def query(self, method: str, id: str, is_force: bool) -> pd.Series:
+        """ Query SV by ID """
+        try:
+            if is_force:
+                res = self.method_dict[method]["force"]["df"].loc[id]
+            else:
+                res = self.method_dict[method]["discovery"]["df"].loc[id]
+        except KeyError:
+            res = None
         
-        self.methods = list(self.bam.keys())
+        return res
 
-    def get_bam(self, method) -> pysam.AlignmentFile:
-        return self.bam[method]
-    
-    def get_filter(self, method):
-        return self.filter[method]
+    def add_info_type(self, tag: str, type: str) -> None:
+        """ Add info type """
+        self.info_type[tag] = type
 
-    def get_prefix(self, method) -> str:
-        return self.prefix[method]
-    
-    def get_aligner(self, method) -> str:
-        return self.aligner[method]
-    
-    def get_caller(self, method) -> str:
-        return self.caller[method]
-    
-    def close(self):
-        for bam in self.bam.values():
-            bam.close()
 
 
 def parse_gt_method(method: str):
@@ -134,25 +209,9 @@ def parse_gt_method(method: str):
         raise SystemExit()
 
 
-def parse_sv_info(file: str) -> pd.DataFrame:
-    """ Extract sample ID and pipeline """
-
-    df_info = pd.read_csv(file, sep="\t", index_col="ID", na_values=[".", "NA"],
-                          dtype={'ID': str, 'CHR': str, 'SVTYPE': str})
-    split_ID = df_info.index.str.split(".")
-    df_info["Sample"] = [x[0] for x in split_ID]
-    df_info["Method"] = [f"{x[1]}_{x[2]}".upper() for x in split_ID] # change method to upper case to match VCF header
-
-    return df_info
-
-
-def add_header(header: pysam.VariantHeader, methods: list) -> pysam.VariantHeader:
+def add_header(header: pysam.VariantHeader, manifest: GenotypeManifest) -> pysam.VariantHeader:
     """ Add VCF header for methods """
-    for x in methods:
-        header.info.add(f"DP_{x}", "1", "Integer", f"Depth of method {x}")
-        header.info.add(f"RE_{x}", "1", "Integer", f"Number of support reads of method {x}")
-        header.info.add(f"AF_{x}", "1", "Float", f"Allele frequency of method {x}")
-    
+    # mandatory INFO tags
     header.info.add("SUPP_METHOD", "1", "Integer", "Number of methods support this SV")
     header.info.add("SUPP_METHOD_FORCE", "1", "Integer", "Number of force calling methods support this SV")
     header.info.add("SUPP_ALIGNER", "1", "Integer", "Number of aligners support this SV")
@@ -164,29 +223,147 @@ def add_header(header: pysam.VariantHeader, methods: list) -> pysam.VariantHeade
     header.info.add("STD_AF_CALL", "1", "Float", "Standard deviation of allele frequency of methods support this SV")
     header.info.add("MAX_RE", "1", "Integer", "Maximum number of reads support this SV")
 
+    # additional INFO tags
+    for _, vcf_dict in manifest.vcf_dict.items():
+        method = vcf_dict["method"]
+        info = vcf_dict["info"]
+        old_header = vcf_dict["header"]
+
+        for tag in info:
+            new_tag = f"{tag}_{method}"
+            if new_tag in header.info:
+                continue
+            # extract from from the original header
+            old_header_line = old_header.info[tag]
+            header.info.add(new_tag, old_header_line.number, old_header_line.type, old_header_line.description)
+            # add info type to manifest
+            manifest.add_info_type(new_tag, old_header_line.type)
+
     return header
 
 
+# TODO: round float
 def np2value(x, type: str, na_value=None):
-    """ Convert numpy type to value, return specific value when na """
-    if np.isnan(x):
+    """ Convert the type required by VCF, return specific value when na """
+    # np.isnan(str) will cause error
+    if not isinstance(x, str) and np.isnan(x):
         return na_value
-    elif type == "int":
+
+    if type == 'Integer':
         return int(x)
-    elif type == "float":
+    elif type == 'Float':
         return float(x)
-    elif type == "str":
+    elif type == 'String':
         return str(x)
+    elif type == 'Flag':
+        return bool(x)
+    
+
+def extract_sv_call(variant: pysam.VariantRecord, 
+                    manifest: GenotypeManifest,
+                    hetero_freq: float) -> tuple:
+    """ Extract info from discovery and force calling results """
+    # store INFO of each methods
+    info_dict = defaultdict(dict)
+    exist_methods = set()
+    exist_methods_force = set()
+
+    # store number of support methods and callers
+    support_methods_set = set()
+    support_methods_force_set = set()
+    support_callers_set = defaultdict(set)
+    support_callers_force_set = defaultdict(set)
+    support_callers_set["no_caller"] = set()
+    support_callers_force_set["no_caller"] = set()
+
+    # extract force calling INFO if any
+    for method in manifest.force_methods:
+        sv_info = manifest.query(method, variant.id, is_force=True)
+        # skip if missing
+        if sv_info is None:
+            continue
+        # add INFO to dict
+        exist_methods.add(method)
+        exist_methods_force.add(method)
+        for tag in manifest.get_info(method, is_force=True):
+            info_dict[tag][method] = sv_info[tag]
+        # add method to support dict
+        if info_dict["AF"][method] >= hetero_freq:
+            support_methods_set.add(method)
+            support_methods_force_set.add(method)
+            aligner = manifest.get_aligner(method)
+            support_callers_set[aligner].add(method)
+            support_callers_force_set[aligner].add(method)   
+    
+    # extract discovery method INFO for method without force calling
+    # Note: force calling might have missing site
+    remain_methods = manifest.methods - exist_methods
+
+    # extract discovery SV calls of working sample
+    # TODO: if additional INFO tags in discovery, always add them
+    if len(remain_methods) > 0:
+        discovery_call = variant.info["ID_LIST"]
+        if isinstance(discovery_call, str):
+            discovery_call = [discovery_call]
+        discovery_call_map = manifest.map_discovery(discovery_call)
+
+        if len(discovery_call_map) > 0:
+            for id, method in discovery_call_map.items():
+                if method in exist_methods:
+                    continue
+                sv_info = manifest.query(method, id, is_force=False)
+                exist_methods.add(method)
+                # add INFO to dict
+                for tag in manifest.get_info(method, is_force=False):
+                    info_dict[tag][method] = sv_info[tag]
+                # add method to support dict
+                if info_dict["AF"][method] >= hetero_freq:
+                    support_methods_set.add(method)
+                    aligner = manifest.get_aligner(method)
+                    support_callers_set[aligner].add(method)
+        
+    # set still missing methods with DP=., RE=0, AF=0
+    remain_methods = manifest.methods - exist_methods
+    if len(remain_methods) > 0:
+        for method in remain_methods:
+            info_dict["DP"][method] = np.nan
+            info_dict["RE"][method] = 0
+            info_dict["AF"][method] = 0
+    
+    # support dict
+    support_dict = {"methods": support_methods_set,
+                    "methods_force": support_methods_force_set,
+                    "callers": support_callers_set,
+                    "callers_force": support_callers_force_set,
+                    "exist_force": exist_methods_force} # exist force is used when genotyping
+
+    return info_dict, support_dict
+
+
+def add_info(new_var: pysam.VariantRecord,
+             old_var: pysam.VariantRecord,
+             info_dict: dict,
+             manifest: GenotypeManifest,
+             keep_info: list) -> pysam.VariantRecord:
+    """ Add INFO to variant """
+
+    # keep original INFO if any
+    for tag in keep_info:
+        if tag in old_var.info:
+            new_var.info[tag] = old_var.info[tag]
+    
+    # add new INFO tags
+    for tag, method_values in info_dict.items():
+        for method, value in method_values.items():
+            new_tag = f"{tag}_{method}"
+            new_var.info[new_tag] = np2value(value, manifest.info_type[new_tag])
+    
+    return new_var
 
 
 def genotype_variant(variant: pysam.VariantRecord, 
-                     sample: str, 
-                     sample_method: method_table,
-                     df_info: pd.DataFrame, 
-                     df_force_call: pd.DataFrame, 
-                     force_call_methods: list,
+                     manifest: GenotypeManifest,
                      min_depth: int, 
-                     count_dp: bool,
                      homo_freq: float, 
                      hetero_freq: float,
                      gt_method: str,
@@ -195,7 +372,6 @@ def genotype_variant(variant: pysam.VariantRecord,
 
     # new VariantRecord object for output
     new_variant = variant.copy()
-    new_variant.id = f"{sample}.{variant.id}"
 
     # clean old info
     new_variant.qual = None
@@ -203,122 +379,46 @@ def genotype_variant(variant: pysam.VariantRecord,
     new_variant.info.clear()
     new_variant.samples[sample_col].clear() # TODO: clear format
 
-    # copy necessary info from original variant
-    new_variant.info["SVTYPE"] = variant.info["SVTYPE"]
-    new_variant.info["SVLEN"] = variant.info["SVLEN"]
-    if "END" in variant.info:
-        new_variant.info["END"] = variant.info["END"]
+    # store INFO of each methods
+    info_dict, support_dict = extract_sv_call(variant, manifest, hetero_freq)
 
-    # extract discovery SV calls of working sample
-    all_sv_call = variant.info["ID_LIST"]
-    if isinstance(all_sv_call, str):
-        all_sv_call = [all_sv_call]
-    sample_sv_call = [x for x in all_sv_call if sample in x]
-
-    # store DP, RE, AF of methods
-    method_dict = {}
-    method_dict["DP"] = {}
-    method_dict["RE"] = {}
-    method_dict["AF"] = {}
-
-    # extract force calling INFO if any
-    if len(force_call_methods)>0:
-        for method in force_call_methods:
-            # extract force calling INFO if any
-            force_call_id = sample_method.get_prefix(method) + "." + variant.id
-            if force_call_id in df_force_call.index:
-                method_dict["DP"][method] = df_force_call.at[force_call_id, 'DP']
-                method_dict["RE"][method] = df_force_call.at[force_call_id, 'RE']
-                if method_dict["DP"][method] > 0:
-                    method_dict["AF"][method] = method_dict["RE"][method] / method_dict["DP"][method]
-                else:
-                    method_dict["AF"][method] = 0
-
-    # extract discovery method INFO for method without force calling
-    # Note: force calling might have missing site, ALWAYS use method_dict["DP"].keys() to get existing samples
-    remain_methods = [x for x in sample_method.methods if x not in method_dict["DP"].keys()]
-    if len(sample_sv_call) > 0 and len(remain_methods) > 0:
-        for sv_call in sample_sv_call:
-            method = df_info.at[sv_call, "Method"]
-            if method in remain_methods:
-                method_dict["DP"][method] = df_info.at[sv_call, 'DP']
-                method_dict["RE"][method] = df_info.at[sv_call, 'RE']
-                method_dict["AF"][method] = method_dict["RE"][method] / method_dict["DP"][method]
-
-    # set still missing methods with RE=0, AF=0, get DP of missing call from bam file if specified
-    # TODO: determine if only quantify depth for INS and DEL
-    missing_methods = [x for x in remain_methods if x not in method_dict["DP"].keys()]
-    if len(missing_methods) > 0:
-        for method in missing_methods:
-            # get 0-based END of SV
-            # in pysam, variant.pos is 1-based position shown in vcf, variant.start is 0-based
-            if count_dp:
-                if variant.info["SVTYPE"] == "INS":
-                    variant_stop = variant.pos
-                else:
-                    variant_stop = variant.start + abs(variant.info["SVLEN"])
-                # TODO: if multiple method with the same filter, only count depth once
-                method_dict["DP"][method] = sample_method.get_bam(method).count(contig=variant.chrom,
-                                                                                start=variant.start,
-                                                                                stop=variant_stop,
-                                                                                read_callback=sample_method.get_filter(method))
-            else:
-                method_dict["DP"][method] = np.nan
-            method_dict["RE"][method] = 0
-            method_dict["AF"][method] = 0
-
-    # add DP, RE, AF per method to INFO
-    # convert from numpy dtype to python built-in type
-    for method in sample_method.methods:
-        new_variant.info[f"DP_{method}"] = np2value(method_dict["DP"][method], 'int')
-        new_variant.info[f"RE_{method}"] = np2value(method_dict["RE"][method], 'int')
-        new_variant.info[f"AF_{method}"] = np2value(method_dict["AF"][method], 'float')
+    # add INFO
+    new_variant = add_info(new_variant, variant, info_dict, manifest, 
+                           keep_info=["SVTYPE", "SVLEN", "END"])
     
-    # count number of support methods and callers
-    support_methods_set = set()
-    support_methods_force_set = set()
-    support_callers = {'no_caller': 0}
-    support_callers_force = {'no_caller': 0}
-    for method, freq in method_dict["AF"].items():
-        if freq >= hetero_freq:
-            support_methods_set = support_methods_set.union([method])
-            aligner = sample_method.get_aligner(method)
-            support_callers[aligner] = support_callers.get(aligner, 0) + 1
-            if method in force_call_methods:
-                support_methods_force_set = support_methods_force_set.union([method])
-                support_callers_force[aligner] = support_callers_force.get(aligner, 0) + 1
-    
+    # add statistics
+    new_variant.info["SUPP_METHOD"] = len(support_dict["methods"])
+    new_variant.info["SUPP_METHOD_FORCE"] = len(support_dict["methods_force"])
+    new_variant.info["SUPP_CALLER"] = max([len(x) for x in support_dict["callers"].values()])
+    new_variant.info["SUPP_CALLER_FORCE"] = max([len(x) for x in support_dict["callers_force"].values()])
 
-    new_variant.info["SUPP_METHOD"] = len(support_methods_set)
-    new_variant.info["SUPP_METHOD_FORCE"] = len(support_methods_force_set)
-    new_variant.info["SUPP_CALLER"] = max(support_callers.values())
-    new_variant.info["SUPP_CALLER_FORCE"] = max(support_callers_force.values())
-
-    # extract maximum RE
-    method_RE = list(method_dict["RE"].values())
-    new_variant.info["MAX_RE"] = int(np.nanmax(method_RE))
+    # maximum RE
+    new_variant.info["MAX_RE"] = int(np.nanmax(list(info_dict["RE"].values())))
 
     # calculate AF and estimate genotype
     if gt_method == "all":
-        method_AF = list(method_dict["AF"].values())
+        geno_dp = list(info_dict["DP"].values())
+        geno_af = list(info_dict["AF"].values())
     elif gt_method == "force_call":
-        method_AF = [method_dict["AF"][x] for x in force_call_methods]
+        geno_dp = [info_dict["DP"][x] for x in support_dict["exist_force"]]
+        geno_af = [info_dict["AF"][x] for x in support_dict["exist_force"]]
     elif isinstance(gt_method, list):
-        method_AF = [method_dict["AF"][x] for x in gt_method]
+        geno_dp = [info_dict["DP"][x] for x in gt_method]
+        geno_af = [info_dict["AF"][x] for x in gt_method]
     # TODO: determine to use x > 0 or x >= hetero_freq
-    method_AF_call = [x for x in method_AF if x >= hetero_freq]
+    geno_af_call = [x for x in geno_af if x >= hetero_freq]
 
-    new_variant.info["MEAN_AF"] = np.nanmean(method_AF)
-    new_variant.info["STD_AF"] = np.nanstd(method_AF)
-    if len(method_AF_call) > 0:
-        mean_AF_call = np.nanmean(method_AF_call)
-        new_variant.info["MEAN_AF_CALL"] = mean_AF_call
-        new_variant.info["STD_AF_CALL"] = np.nanstd(method_AF_call)
+    new_variant.info["MEAN_AF"] = np.nanmean(geno_af)
+    new_variant.info["STD_AF"] = np.nanstd(geno_af)
+    if len(geno_af_call) > 0:
+        mean_af_call = np.nanmean(geno_af_call)
+        new_variant.info["MEAN_AF_CALL"] = mean_af_call
+        new_variant.info["STD_AF_CALL"] = np.nanstd(geno_af_call)
         # genotype by average AF if any method call this SV
-        if mean_AF_call < hetero_freq:
+        if mean_af_call < hetero_freq:
             new_variant.samples[sample_col]["GT"] = (0, 0)
             new_variant.info["AC"] = 0
-        elif mean_AF_call >= hetero_freq and mean_AF_call < homo_freq:
+        elif mean_af_call >= hetero_freq and mean_af_call < homo_freq:
             new_variant.samples[sample_col]["GT"] = (0, 1)
             new_variant.info["AC"] = 1
         else:
@@ -326,25 +426,24 @@ def genotype_variant(variant: pysam.VariantRecord,
             new_variant.info["AC"] = 2
     else:
         # genotype 0/0 or ./. by DP if no method call this SV
+        # TODO: determine if use average DP
         new_variant.info["MEAN_AF_CALL"] = 0
-        if np.nanmean(list(method_dict["DP"].values())) >= min_depth:
+        new_variant.info["STD_AF_CALL"] = None
+        if np.nanmean(geno_dp) >= min_depth:
             new_variant.samples[sample_col]["GT"] = (0, 0)
         else:
             new_variant.samples[sample_col]["GT"] = (None, None)
         new_variant.info["AC"] = 0
 
     return new_variant
-        
+
 
 
 def genotype_vcf(invcf: pysam.VariantFile, 
-                 outvcf: pysam.VariantFile, 
-                 sample: str, 
-                 sample_method: method_table,
-                 df_info: pd.DataFrame, 
-                 df_force_call: pd.DataFrame,
+                 outvcf: pysam.VariantFile,
+                 manifest: GenotypeManifest,
+                 region: str,
                  min_depth: int, 
-                 count_dp: bool,
                  homo_freq: float, 
                  hetero_freq: float,
                  gt_method: str,
@@ -352,29 +451,25 @@ def genotype_vcf(invcf: pysam.VariantFile,
                  verbosity: int=1000) -> None:
     """ Genotyping all variants in the input callset for one sample """
 
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
+    progess = ProgressLogger(item="variants", verbosity=verbosity)
+    
+    if region is None:
+        vcf_iter = invcf.fetch()
+    else:
+        vcf_iter = invcf.fetch(region=region)
 
-    force_call_methods = df_force_call["Method"].unique()
-
-    for i, variant in enumerate(invcf.fetch()):
-        if i % verbosity == 0:
-            logger.info(f"Finish {i} SVs. Genotyping SV at {variant.chrom}:{variant.pos} ({variant.id})")
+    for variant in vcf_iter:
         new_variant = genotype_variant(variant=variant, 
-                                       sample=sample,
-                                       sample_method=sample_method,
-                                       df_info=df_info, 
-                                       df_force_call=df_force_call, 
-                                       force_call_methods=force_call_methods,
+                                       manifest=manifest,
                                        min_depth=min_depth, 
-                                       count_dp=count_dp,
                                        homo_freq=homo_freq, 
                                        hetero_freq=hetero_freq, 
                                        gt_method=gt_method,
                                        sample_col=sample_col)
+        progess.log()
         outvcf.write(new_variant)
     
-    logger.info(f"Finish genotyping of all {i+1} SVs")
+    progess.finish()
 
 
 def genotypeSV_main(cmdargs) -> None:
@@ -387,52 +482,30 @@ def genotypeSV_main(cmdargs) -> None:
     invcf = read_vcf(args.invcf, check_sample=True)
     sample_col = list(invcf.header.samples)[0]
 
-    sample = args.sample
-
-    # read SV info table
-    logger.info(f"Read SV calling INFO of sample {sample} from {args.sv_info}")
-    df_info = parse_sv_info(args.sv_info)
-    df_info = df_info.loc[df_info["Sample"] == sample]
-    if len(df_info.index) == 0:
-        logger.error(f"{sample} is not in the SV calling INFO table")
-
-    # read force calling table
-    logger.info(f"Read force calling INFO of sample {sample} from {args.force_call_info}")
-    df_force_call = parse_sv_info(args.force_call_info)
-    df_force_call = df_force_call.loc[df_force_call["Sample"] == sample]
-    if len(df_force_call.index) == 0:
-        logger.error(f"{sample} is not in the force calling INFO table")
-
-    # read method table
-    logger.info(f"Read method table from {args.method_table}")
-    sample_method = method_table(args.method_table, sample)
+    # read manifest
+    df_manifest = read_manifest(args.manifest, header=0, default_info=['DP', 'RE'])
+    df_manifest['is_force_call'] = df_manifest['is_force_call'].astype(int).astype(bool)
+    manifest = GenotypeManifest(df_manifest, args.sample, args.region)
 
     # parse genotyping method
-    gt_method = parse_gt_method(args.genotyping_method)
+    gt_method = parse_gt_method(args.include)
 
     # prepare output vcf
-    new_header = add_header(invcf.header, methods=sample_method.methods)
-    outvcf = pysam.VariantFile(args.outvcf, "w", header=new_header)
+    new_header = add_header(invcf.header, manifest)
+    outvcf = OutVcf(args.outvcf, new_header)
 
     # genotype sample
     genotype_vcf(invcf=invcf, 
                  outvcf=outvcf, 
-                 sample=sample, 
-                 sample_method=sample_method,
-                 df_info=df_info, 
-                 df_force_call=df_force_call,
+                 manifest=manifest,
+                 region = args.region,
                  min_depth=args.min_dp, 
-                 count_dp=args.count_missing_dp,
                  homo_freq=args.homozygous_freq, 
                  hetero_freq=args.heterozygous_freq,
                  sample_col=sample_col,
                  gt_method=gt_method)
 
-    sample_method.close()
     invcf.close()
     outvcf.close()
     
-    logger.info(f"Write output to {args.outvcf}")
-    if args.outvcf.endswith("vcf.gz"):
-        pysam.bcftools.index("-t", args.outvcf)
-
+    logger.info('Done')
