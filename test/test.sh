@@ -141,3 +141,50 @@ $harmonisv represent \
 --by-freq \
 --id-prefix All_method \
 --save-id
+
+# save representative SVs
+# cp ${dir_represent}/All_method.representative.vcf ${dir_merge}/All_method.representative.vcf
+
+echo "################## 5. Harmonize force calling results ##################"
+dir_force="output/harmonize_force_call/"
+[[ ! -d $dir_force ]] && mkdir -p $dir_force
+
+# sniffles
+ls force_call/*sniffles* | while read vcf; do
+    name=$(basename $vcf)
+    name=${name%.vcf}
+
+    $harmonisv harmonize \
+    -i $vcf \
+    -o ${dir_force}/${name}.harmonized.vcf \
+    --info SVTYPE,SVLEN,END \
+    --format-to-info RE=DV \
+    --format-to-info-sum DP=DR,DP=DV \
+    --header $dir_header/harmonized_header.txt \
+    --header-str 'STRANDS,1,String,Strand orientation of supporting reads'
+
+done
+
+# cuteSV
+ls force_call/*cuteSV* | while read vcf; do
+    name=$(basename $vcf)
+    name=${name%.vcf}
+
+    $harmonisv harmonize \
+    -i $vcf \
+    -o ${dir_force}/${name}.harmonized.vcf \
+    --format-to-info-sum DP=DR,DP=DV \
+    --header $dir_header/harmonized_header.txt \
+    --header-str 'STRANDS,1,String,Strand orientation of supporting reads' \
+    --keep-all
+done
+
+echo "################## 6. Genotype representative SVs ##################"
+dir_genotype="output/genotype/"
+[[ ! -d $dir_genotype ]] && mkdir -p $dir_genotype
+
+$harmonisv genotype \
+-i ${dir_represent}/All_method.representative.vcf \
+-f manifest.txt \
+-o ${dir_genotype}/HG002.representative.genotyped.vcf \
+--sample HG002

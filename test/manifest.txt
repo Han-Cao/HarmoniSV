@@ -1,0 +1,11 @@
+file	sample	aligner	caller	is_force_call	info
+output/harmonize_force_call//HG002.NGMLR.cuteSV.harmonized.vcf	HG002	NGMLR	cuteSV	1	PRECISE,CIPOS,CILEN
+output/harmonize_force_call//HG002.NGMLR.sniffles.harmonized.vcf	HG002	NGMLR	sniffles	1	
+output/harmonize_force_call//HG002.minimap2.cuteSV.harmonized.vcf	HG002	minimap2	cuteSV	1	PRECISE,CIPOS,CILEN
+output/harmonize_force_call//HG002.minimap2.sniffles.harmonized.vcf	HG002	minimap2	sniffles	1	
+output/harmonize/HG002.NGMLR.cuteSV.harmonized.vcf	HG002	NGMLR	cuteSV	0	
+output/harmonize/HG002.NGMLR.sniffles.harmonized.vcf	HG002	NGMLR	sniffles	0	
+output/harmonize/HG002.NGMLR.svim.harmonized.vcf	HG002	NGMLR	svim	0	
+output/harmonize/HG002.minimap2.cuteSV.harmonized.vcf	HG002	minimap2	cuteSV	0	
+output/harmonize/HG002.minimap2.sniffles.harmonized.vcf	HG002	minimap2	sniffles	0	
+output/harmonize/HG002.minimap2.svim.harmonized.vcf	HG002	minimap2	svim	0	
