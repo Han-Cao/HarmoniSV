@@ -60,13 +60,17 @@
                 <li class="toctree-l1"><a class="reference internal" href="../../command_list/">Command list</a>
                 </li>
               </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../vcf_format/">VCF format</a>
+                </li>
+              </ul>
               <p class="caption"><span class="caption-text">VCF manipulation</span></p>
               <ul class="current">
                   <li class="toctree-l1"><a class="reference internal" href="../harmonize_header/">harmonize-header</a>
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="./">harmonize</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#input">Input</a>
+    <li class="toctree-l2"><a class="reference internal" href="#input-requirmenets">Input requirmenets</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#output">Output</a>
     </li>
@@ -101,9 +105,9 @@
               <ul>
                   <li class="toctree-l1"><a class="reference internal" href="../../SV_analysis/represent/">represent</a>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../../SV_analysis/genotype.md">genotype</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../SV_analysis/genotype/">genotype</a>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../../SV_analysis/filter.md">filter</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../SV_analysis/filter/">filter</a>
                   </li>
                   <li class="toctree-l1"><a class="" href="../../SV_analysis/concordance.md">concordance</a>
                   </li>
@@ -135,19 +139,19 @@
               
                 <h1 id="harmonize"><em>harmonize</em></h1>
 <p>Harmonize SV VCFs across samples and SV calling methods</p>
-<p><strong><em> Last updated: 2023-12-05 </em></strong></p>
-<h2 id="input">Input</h2>
+<p><strong><em> Last updated: 2023-12-08 </em></strong></p>
+<h2 id="input-requirmenets">Input requirmenets</h2>
 <ul>
 <li><strong>VCF</strong>: <ul>
 <li><strong>Format</strong>: bi-allelic VCF/BCF files following the VCF specification</li>
-<li><strong>Required INFO</strong>: <code>SVTYPE</code>, if other name is used, specify by <code>--svtype</code></li>
+<li><strong>INFO</strong>: <code>SVTYPE</code>, if other name is used, specify by <code>--svtype</code></li>
 </ul>
 </li>
 </ul>
 <h2 id="output">Output</h2>
 <ul>
 <li><strong>VCF</strong>: harmonized VCF/BCF files.<ul>
-<li><strong>ID format</strong>: <code>{PREFIX}.{SVTYPE}.{NUMBER}</code> if <code>--rename-id --id-prefix PREFIX</code> is specified, otherwise the same as input.</li>
+<li><strong>ID</strong>: <code>{PREFIX}.{SVTYPE}.{NUMBER}</code> if <code>--rename-id --id-prefix PREFIX</code> is specified, otherwise the same as input.</li>
 </ul>
 </li>
 </ul>
