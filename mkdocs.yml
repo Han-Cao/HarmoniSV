@@ -20,6 +20,7 @@ nav:
     - 'Quick start': 'quick_start.md'
     - 'Tutorial': 'tutorial.md'
     - 'Command list': 'command_list.md'
+    - 'VCF format': 'vcf_format.md'
     - 'VCF manipulation':
         - 'harmonize-header': 'VCF_manipulation/harmonize_header.md'
         - 'harmonize': 'VCF_manipulation/harmonize.md'

@@ -20,9 +20,9 @@ parser = argparse.ArgumentParser(prog="harmonisv harmonize",
 
 required = parser.add_argument_group('Input/Output arguments')
 required.add_argument("-i", "--invcf", metavar="VCF", type=str, required=True,
-                      help="input VCF")
+                      help="input VCF/BCF file")
 required.add_argument("-o", "--outvcf", metavar="VCF", type=str, required=True,
-                      help="output VCF")
+                      help="output VCF/BCF file")
 
 vcf_info_arg = parser.add_argument_group('VCF INFO manipulation')
 vcf_info_arg.add_argument("--info", metavar="TAG", type=str, required=False,

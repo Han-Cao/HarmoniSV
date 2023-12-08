@@ -19,11 +19,11 @@ parser = argparse.ArgumentParser(prog="harmonisv represent",
                                  add_help=False)
 io_arg = parser.add_argument_group('Input/Output arguments')
 io_arg.add_argument("-i", "--invcf", metavar="VCF", type=str, required=False,
-                    help="input vcf")
+                    help="input VCF/BCF file")
 io_arg.add_argument("-f", "--file-list", metavar="TSV", type=str, required=False,
-                    help="list of VCF files, one VCF per line")
+                    help="list of VCF/BCF files, one file per line")
 io_arg.add_argument("-o", "--outvcf", metavar="VCF", type=str, required=True,
-                    help="output vcf")
+                    help="output VCF/BCF file")
 io_arg.add_argument("--merge", metavar="FILE", type=str, required=True,
                     help="SV merging results, each line is comma-separated list of IDs of merged SVs, or the ID of unique SVs")
 io_arg.add_argument("-r", "--region", metavar="chr", type=str, required=False,

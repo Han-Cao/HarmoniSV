@@ -15,6 +15,7 @@ The documentation for below commands are ready now:
 - [harmonize-header]
 - [harmonize]
 - [represent]
+- [genotype]
 
 For other commands, please type `harmonisv <command> -h` to get help. I am simplifying the input format and command line options for other commands. The documentation will be updated after that.
 

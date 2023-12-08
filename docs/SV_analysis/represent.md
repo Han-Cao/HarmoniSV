@@ -2,21 +2,26 @@
 
 Select the representative SV from merged SVs
 
-*** Last updated: 2023-12-05 ***
+*** Last updated: 2023-12-08 ***
 
-## Input
+## Input requirmenets
 - **VCF**: 
     - **Format**: bi-allelic VCF/BCF files following the VCF specification
-    - **Required INFO**: `SVTYPE`, `SVLEN`, `AC`
-    - **Required ID**: unique ID across all input VCFs
+    - **INFO**: `SVTYPE`, `SVLEN`, `AC`
+    - **ID**: unique ID across all input VCFs
 - **VCF file list**:
-    - **Format**: one VCF per line
+    - **Format**: one VCF/BCF per line
 - **SV merging results**:
-    - **Format**: each line is comma-separated list of IDs of merged SVs, or the ID of unique SVs. Any SV merging method can be used. Particularly, we have tested [Jasmine] in the workflow.
+    - **Format**: comma-separated list of merged SV IDs, unique SVs that are not merged with others should also be included without comma
+- **Region**:
+    - **Format**: region string accepted by bcftools (e.g., `chr1[:100-200]`)
 
 ## Output
-- **VCF**: harmonized VCF/BCF files.
-- **ID format**: `{PREFIX}.{SVTYPE}.{NUMBER}` if `--rename-id --id-prefix PREFIX` is specified, otherwise the same as input.
+- **VCF**: representative SV VCF/BCF files.
+    - **INFO**: 
+        - `REPRESENT_SV`: original ID of the representative SV
+        - `ID_LIST`: list of SVs merged to the representative SV
+    - **ID**: `{SVTYPE}.{NUMBER}` by default. `--id-prefix PREFIX` will add `{PREFIX}.` to the beginning, `--region STR` will add `{STR}_` before `{NUMBER}`.
 
 ## Usage
 

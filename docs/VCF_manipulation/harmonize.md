@@ -2,16 +2,16 @@
 
 Harmonize SV VCFs across samples and SV calling methods
 
-*** Last updated: 2023-12-05 ***
+*** Last updated: 2023-12-08 ***
 
-## Input
+## Input requirmenets
 - **VCF**: 
     - **Format**: bi-allelic VCF/BCF files following the VCF specification
-    - **Required INFO**: `SVTYPE`, if other name is used, specify by `--svtype`
+    - **INFO**: `SVTYPE`, if other name is used, specify by `--svtype`
 
 ## Output
 - **VCF**: harmonized VCF/BCF files.
-    - **ID format**: `{PREFIX}.{SVTYPE}.{NUMBER}` if `--rename-id --id-prefix PREFIX` is specified, otherwise the same as input.
+    - **ID**: `{PREFIX}.{SVTYPE}.{NUMBER}` if `--rename-id --id-prefix PREFIX` is specified, otherwise the same as input.
 
 ## Usage
 

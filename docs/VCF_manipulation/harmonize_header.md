@@ -2,10 +2,10 @@
 
 Harmonize VCF headers
 
-*** Last updated: 2023-12-05 ***
+*** Last updated: 2023-12-08 ***
 
-## Input
-- **VCF**: Any VCF/BCF files following the VCF specification.
+## Input requirmenets
+- **VCF**: VCF/BCF files following the VCF specification.
 
 
 ## Output
