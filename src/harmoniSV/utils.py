@@ -206,19 +206,20 @@ def parse_info(variant: pysam.VariantRecord, info: list='all') -> dict:
             if len(tag_value) == 1:
                 tag_value = tag_value[0]
             else:
-                tag_value = ','.join(tag_value)
+                tag_value = tag_value
         
         new_info[tag] = tag_value
     
     return new_info
 
 
-def vcf_to_df(vcf: pysam.VariantFile, info: list='all', region: str=None) -> pd.DataFrame:
+def vcf_to_df(vcf: pysam.VariantFile, info: list='all', region: str=None, fill_tuple_na: bool=False) -> pd.DataFrame:
     """
     Convert vcf to dataframe, ID, CHR, POS and all INFO tags are included by default
     
     info: list of INFO tags to be extracted. If 'all', all INFO tags will be extracted (default)
     region: bcftools region string (default: None)
+    fill_tuple_na: whether to replace NaN if INFO tag is tuple (default: False)
 
     For INFO tags with multiple value (i.e., comma in value), store as string
     """
@@ -237,7 +238,27 @@ def vcf_to_df(vcf: pysam.VariantFile, info: list='all', region: str=None) -> pd.
         rows.append(new_row)
     
     df = pd.DataFrame(rows)
-    
+
+    # handle NA for tuple types
+    if fill_tuple_na:
+        for col in df.columns:
+            if df[col].dtype != 'object':
+                continue
+            n_na = df[col].isna().sum()
+            if n_na == 0:
+                continue
+            # if tuple and include NaN, expand NaN to tuple of None
+            if df[col].apply(lambda x: isinstance(x, tuple)).any():
+                # count number of elements in tuple
+                n_elem = df[col].apply(lambda x: len(x) if isinstance(x, tuple) else -1)
+                n_elem_uniq = n_elem.unique()
+                n_elem_uniq = n_elem_uniq[n_elem_uniq >= 0]
+                # return (None,) if not fixed length
+                if len(n_elem_uniq) > 1:
+                    df.loc[df[col].isna(), col] = [tuple([None])] * n_na
+                else:
+                    df.loc[df[col].isna(), col] = df.loc[df[col].isna(), col].apply(lambda x: tuple([None] * n_elem_uniq[0]))
+
     return df
 
 

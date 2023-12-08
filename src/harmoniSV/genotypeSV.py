@@ -33,13 +33,13 @@ io_arg.add_argument("-r", "--region", metavar="chr", type=str, default=None,
 
 genotyping_arg = parser.add_argument_group('Genotyping arguments')
 genotyping_arg.add_argument("--min-dp", metavar="10", type=int, default=10,
-                            help="minimum depth to to genotype SVs as 0/0 if no method has RE>0, otherwise ./.")
-genotyping_arg.add_argument("--homozygous-freq", metavar="0.8", type=float, default=0.8,
-                            help="minimum average allele frequency to genotype as homozygous")
-genotyping_arg.add_argument("--heterozygous-freq", metavar="0.2", type=float, default=0.2,
-                            help="minimum average allele frequency to genotype as heterozygous")
+                            help="minimum depth to to genotype SVs as 0/0 if no method has VAF > --hetero-freq, otherwise ./. (default: 10)")
+genotyping_arg.add_argument("--homo-freq", metavar="0.8", type=float, default=0.8,
+                            help="minimum average variant allele fraction to genotype as homozygous (default: 0.8)")
+genotyping_arg.add_argument("--hetero-freq", metavar="0.2", type=float, default=0.2,
+                            help="minimum average variant allele fraction to genotype as heterozygous (default: 0.2)")
 genotyping_arg.add_argument("--include", metavar="all", type=str, default="all",
-                            help="methods to be included to determine genotype. Options: 'all', 'force_call', or comma-separated list of methods ('ALIGNER_CALLER'). Default: 'all'")
+                            help="methods to be included to determine genotype. Options: 'all', 'force_call', or comma-separated list of methods in format of 'ALIGNER_CALLER'. (default: 'all')")
 
 optional_arg = parser.add_argument_group('optional arguments')
 optional_arg.add_argument("-h", "--help", action='help', help='show this help message and exit')
@@ -93,7 +93,7 @@ class GenotypeManifest:
     def _parse_vcf(self, vcf: pysam.VariantFile, info: str, region: str=None) -> pd.DataFrame:
         """ Read VCF and conver to df """
 
-        df_vcf = vcf_to_df(vcf, info, region)
+        df_vcf = vcf_to_df(vcf, info, region, fill_tuple_na=True)
         df_vcf.set_index('ID', inplace=True)
         df_vcf['VAF'] = df_vcf['RE'] / df_vcf['DP']
         # VAF = NaN if DP = 0 is correct for single-method genotyping
@@ -249,17 +249,20 @@ def add_header(header: pysam.VariantHeader, manifest: GenotypeManifest) -> pysam
 # TODO: round float
 def np2value(x, type: str, na_value=None):
     """ Convert the type required by VCF, return specific value when na """
+    # if tuple or None, return as it is
+    if isinstance(x, tuple) or x is None:
+        return x
     # np.isnan(str) will cause error
     if not isinstance(x, str) and np.isnan(x):
         return na_value
 
     if type == 'Integer':
         return int(x)
-    elif type == 'Float':
+    if type == 'Float':
         return float(x)
-    elif type == 'String':
+    if type == 'String':
         return str(x)
-    elif type == 'Flag':
+    if type == 'Flag':
         return bool(x)
     
 
@@ -388,7 +391,7 @@ def genotype_variant(variant: pysam.VariantRecord,
 
     # add INFO
     new_variant = add_info(new_variant, variant, info_dict, manifest, 
-                           keep_info=["SVTYPE", "SVLEN", "END"])
+                           keep_info=["SVTYPE", "SVLEN", "END", "REPRESENT_SV"])
     
     # add statistics
     new_variant.info["SUPP_METHOD"] = len(support_dict["methods"])
@@ -504,8 +507,8 @@ def genotypeSV_main(cmdargs) -> None:
                  manifest=manifest,
                  region = args.region,
                  min_depth=args.min_dp, 
-                 homo_freq=args.homozygous_freq, 
-                 hetero_freq=args.heterozygous_freq,
+                 homo_freq=args.homo_freq, 
+                 hetero_freq=args.hetero_freq,
                  sample_col=sample_col,
                  gt_method=gt_method)
 
