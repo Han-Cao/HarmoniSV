@@ -21,15 +21,15 @@ parser = argparse.ArgumentParser(prog="harmonisv genotype",
                                  add_help=False)
 io_arg = parser.add_argument_group('Input/Output arguments')
 io_arg.add_argument("-i", "--invcf", metavar="VCF", type=str, required=True,
-                    help="input representative SV call set vcf, INFO/ID_LIST store merged SV calls")
+                    help="input representative SV call set VCF/BCF")
 io_arg.add_argument("-f", "--manifest", metavar="TSV", type=str, required=True,
-                    help="tab separated manifest file of SV calling results. Column headers should be: file, sample, aligner, caller, info, is_force_call")
-io_arg.add_argument("--sample", metavar="SAMPLE_ID", type=str, required=True,
-                    help="sample ID to be extracted from manifest")
+                    help="tab separated manifest file of SV calling results. Column headers should be: file, sample, aligner, caller, is_force_call, info (optinal)")
+io_arg.add_argument("--sample", metavar="ID", type=str, required=True,
+                    help="sample to be genotyped, should be listed in the manifest file")
 io_arg.add_argument("-o", "--outvcf", metavar="VCF", type=str, required=True,
                     help="output vcf")
 io_arg.add_argument("-r", "--region", metavar="chr", type=str, default=None,
-                    help="genomic region to genotype (require indexed VCF)")
+                    help="region to genotype (require indexed VCF)")
 
 genotyping_arg = parser.add_argument_group('Genotyping arguments')
 genotyping_arg.add_argument("--min-dp", metavar="10", type=int, default=10,
@@ -39,7 +39,7 @@ genotyping_arg.add_argument("--homozygous-freq", metavar="0.8", type=float, defa
 genotyping_arg.add_argument("--heterozygous-freq", metavar="0.2", type=float, default=0.2,
                             help="minimum average allele frequency to genotype as heterozygous")
 genotyping_arg.add_argument("--include", metavar="all", type=str, default="all",
-                            help="methods to be used to determine genotype. Options: 'all', 'force_call', or comma-separated list of methods ('ALIGNER_CALLER'). Default: 'all'")
+                            help="methods to be included to determine genotype. Options: 'all', 'force_call', or comma-separated list of methods ('ALIGNER_CALLER'). Default: 'all'")
 
 optional_arg = parser.add_argument_group('optional arguments')
 optional_arg.add_argument("-h", "--help", action='help', help='show this help message and exit')
@@ -95,13 +95,13 @@ class GenotypeManifest:
 
         df_vcf = vcf_to_df(vcf, info, region)
         df_vcf.set_index('ID', inplace=True)
-        df_vcf['AF'] = df_vcf['RE'] / df_vcf['DP']
-        # AF = NaN if DP = 0 is correct for single-method genotyping
-        # However, if any other method call this SV (i.e., DP and AF > 0) 
-        # setting AF = 0 means this method does not call this SV
+        df_vcf['VAF'] = df_vcf['RE'] / df_vcf['DP']
+        # VAF = NaN if DP = 0 is correct for single-method genotyping
+        # However, if any other method call this SV (i.e., DP and VAF > 0) 
+        # setting VAF = 0 means this method does not call this SV
         # We will always set genotype as ./. if no method call this SV or DP < min_depth
-        # Therefore, setting AF = 0 will not call missing genotype as 0/0
-        df_vcf['AF'] = df_vcf['AF'].fillna(0)
+        # Therefore, setting VAF = 0 will not call missing genotype as 0/0
+        df_vcf['VAF'] = df_vcf['VAF'].fillna(0)
 
         return df_vcf
     
@@ -114,9 +114,9 @@ class GenotypeManifest:
         vcf = read_vcf(file, check_sample=True)
         df_vcf = self._parse_vcf(vcf, info, region)
         method = f"{aligner}_{caller}".upper()
-        # if AF is not in INFO, add it
-        if "AF" not in info:
-            info.append("AF")
+        # if VAF is not in INFO, add it
+        if "VAF" not in info:
+            info.append("VAF")
 
         # append method
         if method not in self.methods:
@@ -212,15 +212,17 @@ def parse_gt_method(method: str):
 def add_header(header: pysam.VariantHeader, manifest: GenotypeManifest) -> pysam.VariantHeader:
     """ Add VCF header for methods """
     # mandatory INFO tags
+    if "VAF" not in header.info:
+        header.info.add("VAF", "1", "Float", "Variant allele fraction")
     header.info.add("SUPP_METHOD", "1", "Integer", "Number of methods support this SV")
     header.info.add("SUPP_METHOD_FORCE", "1", "Integer", "Number of force calling methods support this SV")
     header.info.add("SUPP_ALIGNER", "1", "Integer", "Number of aligners support this SV")
     header.info.add("SUPP_CALLER", "1", "Integer", "Maximum number of callers support this SV given the same aligner")
     header.info.add("SUPP_CALLER_FORCE", "1", "Integer", "Maximum number of force calling callers support this SV given the same aligner")
-    header.info.add("MEAN_AF", "1", "Float", "Average allele frequency of all methods")
-    header.info.add("STD_AF", "1", "Float", "Standard deviation of allele frequency of all methods")
-    header.info.add("MEAN_AF_CALL", "1", "Float", "Average allele frequency of methods support this SV")
-    header.info.add("STD_AF_CALL", "1", "Float", "Standard deviation of allele frequency of methods support this SV")
+    header.info.add("MEAN_VAF", "1", "Float", "Average allele frequency of all methods")
+    header.info.add("STD_VAF", "1", "Float", "Standard deviation of allele frequency of all methods")
+    header.info.add("MEAN_VAF_CALL", "1", "Float", "Average allele frequency of methods support this SV")
+    header.info.add("STD_VAF_CALL", "1", "Float", "Standard deviation of allele frequency of methods support this SV")
     header.info.add("MAX_RE", "1", "Integer", "Maximum number of reads support this SV")
 
     # additional INFO tags
@@ -228,6 +230,8 @@ def add_header(header: pysam.VariantHeader, manifest: GenotypeManifest) -> pysam
         method = vcf_dict["method"]
         info = vcf_dict["info"]
         old_header = vcf_dict["header"]
+        if "VAF" not in old_header.info:
+            old_header.info.add("VAF", "1", "Float", "Variant allele fraction")
 
         for tag in info:
             new_tag = f"{tag}_{method}"
@@ -288,7 +292,7 @@ def extract_sv_call(variant: pysam.VariantRecord,
         for tag in manifest.get_info(method, is_force=True):
             info_dict[tag][method] = sv_info[tag]
         # add method to support dict
-        if info_dict["AF"][method] >= hetero_freq:
+        if info_dict["VAF"][method] >= hetero_freq:
             support_methods_set.add(method)
             support_methods_force_set.add(method)
             aligner = manifest.get_aligner(method)
@@ -317,18 +321,18 @@ def extract_sv_call(variant: pysam.VariantRecord,
                 for tag in manifest.get_info(method, is_force=False):
                     info_dict[tag][method] = sv_info[tag]
                 # add method to support dict
-                if info_dict["AF"][method] >= hetero_freq:
+                if info_dict["VAF"][method] >= hetero_freq:
                     support_methods_set.add(method)
                     aligner = manifest.get_aligner(method)
                     support_callers_set[aligner].add(method)
         
-    # set still missing methods with DP=., RE=0, AF=0
+    # set still missing methods with DP=., RE=0, VAF=0
     remain_methods = manifest.methods - exist_methods
     if len(remain_methods) > 0:
         for method in remain_methods:
             info_dict["DP"][method] = np.nan
             info_dict["RE"][method] = 0
-            info_dict["AF"][method] = 0
+            info_dict["VAF"][method] = 0
     
     # support dict
     support_dict = {"methods": support_methods_set,
@@ -395,26 +399,26 @@ def genotype_variant(variant: pysam.VariantRecord,
     # maximum RE
     new_variant.info["MAX_RE"] = int(np.nanmax(list(info_dict["RE"].values())))
 
-    # calculate AF and estimate genotype
+    # calculate VAF and estimate genotype
     if gt_method == "all":
         geno_dp = list(info_dict["DP"].values())
-        geno_af = list(info_dict["AF"].values())
+        geno_af = list(info_dict["VAF"].values())
     elif gt_method == "force_call":
         geno_dp = [info_dict["DP"][x] for x in support_dict["exist_force"]]
-        geno_af = [info_dict["AF"][x] for x in support_dict["exist_force"]]
+        geno_af = [info_dict["VAF"][x] for x in support_dict["exist_force"]]
     elif isinstance(gt_method, list):
         geno_dp = [info_dict["DP"][x] for x in gt_method]
-        geno_af = [info_dict["AF"][x] for x in gt_method]
+        geno_af = [info_dict["VAF"][x] for x in gt_method]
     # TODO: determine to use x > 0 or x >= hetero_freq
     geno_af_call = [x for x in geno_af if x >= hetero_freq]
 
-    new_variant.info["MEAN_AF"] = np.nanmean(geno_af)
-    new_variant.info["STD_AF"] = np.nanstd(geno_af)
+    new_variant.info["MEAN_VAF"] = np.nanmean(geno_af)
+    new_variant.info["STD_VAF"] = np.nanstd(geno_af)
     if len(geno_af_call) > 0:
         mean_af_call = np.nanmean(geno_af_call)
-        new_variant.info["MEAN_AF_CALL"] = mean_af_call
-        new_variant.info["STD_AF_CALL"] = np.nanstd(geno_af_call)
-        # genotype by average AF if any method call this SV
+        new_variant.info["MEAN_VAF_CALL"] = mean_af_call
+        new_variant.info["STD_VAF_CALL"] = np.nanstd(geno_af_call)
+        # genotype by average VAF if any method call this SV
         if mean_af_call < hetero_freq:
             new_variant.samples[sample_col]["GT"] = (0, 0)
             new_variant.info["AC"] = 0
@@ -427,8 +431,8 @@ def genotype_variant(variant: pysam.VariantRecord,
     else:
         # genotype 0/0 or ./. by DP if no method call this SV
         # TODO: determine if use average DP
-        new_variant.info["MEAN_AF_CALL"] = 0
-        new_variant.info["STD_AF_CALL"] = None
+        new_variant.info["MEAN_VAF_CALL"] = 0
+        new_variant.info["STD_VAF_CALL"] = None
         if np.nanmean(geno_dp) >= min_depth:
             new_variant.samples[sample_col]["GT"] = (0, 0)
         else:
