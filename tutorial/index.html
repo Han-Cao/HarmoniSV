@@ -59,6 +59,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#2-harmonize-vcfs">2. Harmonize VCFs</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#3-merge-vcfs">3. Merge VCFs</a>
+    </li>
     </ul>
                 </li>
               </ul>
@@ -117,7 +119,7 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="tutorial">Tutorial</h1>
-<p><strong><em> Last updated: 2023-12-08 </em></strong></p>
+<p><strong><em> Last updated: 2024-01-16 </em></strong></p>
 <p>This tutorial provides a step-by-step guide on how to utilize <code>harmonisv</code> for post-processing the outcomes of various SV calling methods and conducting joint SV calling across multiple samples and methods. The necessary input data and scripts for this tutorial can be found in the <a href="https://github.com/Han-Cao/HarmoniSV/tree/master/test">test</a> folder on GitHub.</p>
 <h2 id="1-sv-discovery-using-various-methods">1. SV Discovery Using Various Methods</h2>
 <p>Please note that <code>harmonisv</code> itself does not directly perform SV calling. Instead, it is designed to harmonize and integrate the results from any SV calling methods that generate a VCF file following the VCF specification and contains the essential information:</p>
@@ -141,8 +143,7 @@ ngmlr --bam-fix -t 40 -x pacbio \
 -o $bam
 </code></pre>
 <p>Call SVs from alignments:</p>
-<pre><code class="language-bash">
-# sniffles (ver 2.0.6)
+<pre><code class="language-bash"># sniffles (ver 2.0.6)
 sniffles \
 -i $bam \
 -v $vcf \
@@ -173,178 +174,56 @@ $input $ref $vcf $workdir
 <li>HG002.NGMLR.cuteSV.vcf</li>
 </ul>
 <h2 id="2-harmonize-vcfs">2. Harmonize VCFs</h2>
-<p>The output VCF files from different SV calling methods usually have different formats in their <code>INFO</code> and <code>FORMAT</code> fields. To integrate the results from different methods, we first need to harmonize the VCFs to a standard format. Here, we first use <code>harmonize-header</code> to combine the headers from all input VCFs. This step make all</p>
+<p>The output VCF files from different SV calling methods usually have different formats in their <code>INFO</code> and <code>FORMAT</code> fields. To integrate the results from different methods, we first need to harmonize the VCFs to a standard format. This is because when we rename or move VCF tags (e.g., FORMAT/tag to INFO/tag), the newly added tags should also have definition in the header according to the VCF specification. Here, we first use <code>harmonize-header</code> to combine the headers from all input VCFs.</p>
 <pre><code class="language-bash"># If one tag is defined in multiple VCFs
 # the one from the reference VCF or the first VCF in the list will be used
 harmonisv harmonize-header \
 -f vcf_list.txt \                # read VCF list from file
--o harmonized_header.txt \      # output file
+-o harmonized_header.txt \       # output file
 -r HG002.minimap2.sniffles.vcf   # reference VCF file (optional)
 </code></pre>
-<p>and then use <code>harmonize</code> to standardize the VCFs:</p>
+<p>Then, we can use <code>harmonize</code> to standardize the VCFs:</p>
 <ol>
+<li>reheader with <code>harmonized_header.txt</code></li>
 <li>for the same information stored in different tags, rename them to the same tag</li>
 <li>normalize SV types to the same format (e.g., <code>DUP:TANDEM</code> to <code>DUP</code>)</li>
-<li></li>
+<li>extract all required tags to <code>INFO</code> field</li>
+<li>rename SV ID to make them unique across samples and methods</li>
 </ol>
-<h1 id="harmonize-headers-from-list-of-input-vcf-files">harmonize headers from list of input vcf files</h1>
-<p>echo "################## 1. harmonize-header ##################"
-dir_header="output/harmonize_header/"
-[[ ! -d $dir_header ]] &amp;&amp; mkdir -p $dir_header</p>
-<p>ls raw/<em>NGMLR</em> &gt; $dir_header/NGMLR_vcf_list.txt</p>
-<p>$harmonisv harmonize-header \
--i raw/HG002.minimap2.cuteSV.vcf,raw/HG002.minimap2.sniffles.vcf,raw/HG002.minimap2.svim.vcf \
--f $dir_header/NGMLR_vcf_list.txt \
--o $dir_header/harmonized_header.txt \
--r raw/HG002.minimap2.sniffles.vcf</p>
-<h1 id="harmonize-vcfs">harmonize VCFs</h1>
-<p>echo "################## 2. harmonize VCFs ##################"
-dir_harmonize="output/harmonize/"
-[[ ! -d $dir_harmonize ]] &amp;&amp; mkdir -p $dir_harmonize</p>
-<h1 id="sniffles">sniffles</h1>
-<p>ls raw/<em>sniffles</em> | while read vcf; do
-    name=$(basename $vcf)
-    name=${name%.vcf}</p>
-<pre><code>$harmonisv harmonize \
--i $vcf \
--o ${dir_harmonize}/${name}.harmonized.vcf \
---info SVTYPE,SVLEN,END,STRANDS=STRAND \
---format-to-info RE=DV \
---format-to-info-sum DP=DR,DP=DV \
---header $dir_header/harmonized_header.txt \
---header-str 'STRANDS,1,String,Strand orientation of supporting reads' \
---id-prefix $name \
---rename-id
+<pre><code class="language-bash"># sniffles
+harmonisv harmonize \
+-i HG002.minimap2.sniffles.vcf \
+-o HG002.minimap2.sniffles.harmonized.vcf \
+--info SVTYPE,SVLEN,END,STRANDS=STRAND \        # INFO tags to be kept
+--format-to-info RE=DV \                        # extract FORMAT/DV to INFO/RE
+--format-to-info-sum DP=DR,DP=DV \              # INFO/DP = FORMAT/DR + FORMAT/DV
+--header harmonized_header.txt \                # reheader
+--id-prefix HG002.minimap2.sniffles \           # add sample ID and method as prefix to SV ID
+--rename-id                                     # rename SV ID to prefix.chr.svtype.number
+
+# SVIM
+harmonisv harmonize \
+-i HG002.minimap2.svim.vcf \
+-o HG002.minimap2.svim.harmonized.vcf \
+--info SVTYPE,SVLEN,END,RE=SUPPORT \            # INFO tags to be kept
+--format-to-info DP=DP \                        # extract FORMAT/DP to INFO/DP
+--DUP DUP,DUP:TANDEM,DUP:INT \                  # normalize SV types
+--header harmonized_header.txt \                # reheader
+--id-prefix HG002.minimap2.svim \               # add sample ID and method as prefix to SV ID
+--rename-id                                     # rename SV ID to prefix.chr.svtype.number
+
+# cuteSV
+harmonisv harmonize \
+-i HG002.minimap2.cuteSV.vcf \
+-o HG002.minimap2.cuteSV.harmonized.vcf \
+--info SVTYPE,SVLEN,END,RE \                   # INFO tags to be kept
+--format-to-info-sum DP=DR,DP=DV \             # INFO/DP = FORMAT/DR + FORMAT/DV
+--header harmonized_header.txt \               # reheader    
+--id-prefix HG002.minimap2.cuteSV \            # add sample ID and method as prefix to SV ID
+--rename-id                                    # rename SV ID to prefix.chr.svtype.number
 </code></pre>
-<p>done</p>
-<h1 id="svim">SVIM</h1>
-<p>ls raw/<em>svim</em> | while read vcf; do
-    name=$(basename $vcf)
-    name=${name%.vcf}</p>
-<pre><code>$harmonisv harmonize \
--i $vcf \
--o ${dir_harmonize}/${name}.harmonized.vcf \
---info SVTYPE,SVLEN,END,RE=SUPPORT \
---format-to-info DP=DP \
---DUP DUP,DUP:TANDEM,DUP:INT \
---header $dir_header/harmonized_header.txt \
---header-str 'STRANDS,1,String,Strand orientation of supporting reads' \
---id-prefix $name \
---rename-id 2&gt; ${dir_harmonize}/${name}.harmonized.vcf.log
-</code></pre>
-<p>done</p>
-<h1 id="cutesv">cuteSV</h1>
-<p>ls raw/<em>cuteSV</em> | while read vcf; do
-    name=$(basename $vcf)
-    name=${name%.vcf}</p>
-<pre><code>$harmonisv harmonize \
--i $vcf \
--o ${dir_harmonize}/${name}.harmonized.vcf \
---info SVTYPE,SVLEN,END,RE \
---format-to-info-sum DP=DR,DP=DV \
---header $dir_header/harmonized_header.txt \
---header-str 'STRANDS,1,String,Strand orientation of supporting reads' \
---id-prefix $name \
---rename-id
-</code></pre>
-<p>done</p>
-<h1 id="jasmine-code-to-identify-duplicated-sv-calls">Jasmine code to identify duplicated SV calls</h1>
-<p>dir_dupcall="dup_call/"
-[[ ! -d $dir_dupcall ]] &amp;&amp; mkdir -p $dir_dupcall</p>
-<h1 id="ls-outputharmonizeharmonizedvcf-while-read-vcf-do">ls output/harmonize/*harmonized.vcf | while read vcf; do</h1>
-<h1 id="namebasename-vcf">name=$(basename $vcf)</h1>
-<h1 id="namenamevcf">name=${name%.vcf}</h1>
-<p>#     jasmine file_list=$vcf \
-#     out_file=${dir_dupcall}/${name}.dup_call.vcf \
-#     genome_file=hs37d5.fa \
-#     --comma_filelist \
-#     max_dist=200 \
-#     --allow_intrasample \
-#     --nonlinear_dist \
-#     --ignore_strand \</p>
-<h1 id="-keep_var_ids">--keep_var_ids</h1>
-<h1 id="write-merged-sv-list"># write merged SV list</h1>
-<p>#     bcftools query -f '%INTRASAMPLE_IDLIST\n' ${dir_dupcall}/${name}.dup_call.vcf \</p>
-<h1 id="dir_dupcallnamedup_calltxt">&gt; ${dir_dupcall}/${name}.dup_call.txt</h1>
-<h1 id="done">done</h1>
-<h1 id="remove-duplicated-svs">remove duplicated SVs</h1>
-<h1 id="ie-find-representative-svs-among-duplicated-svs-based-on-re">i.e., find representative SVs among duplicated SVs based on RE</h1>
-<p>echo "################## 3. Remove duplicated SVs within the same method ##################"
-dir_dedup="output/dedup/"
-[[ ! -d dir_dedup ]] &amp;&amp; mkdir -p $dir_dedup</p>
-<p>ls ${dir_harmonize}/*harmonized.vcf | while read vcf; do
-    name=$(basename $vcf)
-    name=${name%.vcf}</p>
-<pre><code>$harmonisv represent \
--i $vcf \
--o ${dir_dedup}/${name}.dedup.vcf \
---merge ${dir_dupcall}/${name}.dup_call.txt \
---by-max RE \
---min-len-input 30 \
---min-len-output 30
-</code></pre>
-<p>done</p>
-<h1 id="jasmine-code-to-merge-svs-from-different-methods">Jasmine code to merge SVs from different methods</h1>
-<p>dir_merge="sv_merge/"
-[[ ! -d $dir_merge ]] &amp;&amp; mkdir -p $dir_merge</p>
-<h1 id="ls-dir_harmonizeharmonizedvcf-dir_mergeall_methodmerge_vcf_listtxt">ls ${dir_harmonize}/*harmonized.vcf &gt; ${dir_merge}/All_method.merge_vcf_list.txt</h1>
-<p># jasmine \
-# file_list=${dir_merge}/All_method.merge_vcf_list.txt \
-# out_file=${dir_merge}/All_method.merge.vcf \
-# --keep_var_ids \</p>
-<h1 id="-ignore_strand">--ignore_strand</h1>
-<h1 id="bcftools-query-f-idlistn-dir_mergeall_methodmergevcf-dir_mergeall_methodmergetxt">bcftools query -f '%IDLIST\n' ${dir_merge}/All_method.merge.vcf &gt; ${dir_merge}/All_method.merge.txt</h1>
-<h1 id="find-representative-svs-among-merged-svs-based-on-frequency-distance">Find representative SVs among merged SVs based on frequency / distance</h1>
-<p>echo "################## 4. Find representative SVs among different methods ##################"
-dir_represent="output/represent/"
-[[ ! -d $dir_represent ]] &amp;&amp; mkdir -p $dir_represent</p>
-<p>$harmonisv represent \
--f ${dir_merge}/All_method.merge_vcf_list.txt \
--o ${dir_represent}/All_method.representative.vcf \
---merge ${dir_merge}/All_method.merge.txt \
---by-freq \
---id-prefix All_method \
---save-id</p>
-<h1 id="save-representative-svs">save representative SVs</h1>
-<h1 id="cp-dir_representall_methodrepresentativevcf-dir_mergeall_methodrepresentativevcf">cp ${dir_represent}/All_method.representative.vcf ${dir_merge}/All_method.representative.vcf</h1>
-<p>echo "################## 5. Harmonize force calling results ##################"
-dir_force="output/harmonize_force_call/"
-[[ ! -d $dir_force ]] &amp;&amp; mkdir -p $dir_force</p>
-<h1 id="sniffles_1">sniffles</h1>
-<p>ls force_call/<em>sniffles</em> | while read vcf; do
-    name=$(basename $vcf)
-    name=${name%.vcf}</p>
-<pre><code>$harmonisv harmonize \
--i $vcf \
--o ${dir_force}/${name}.harmonized.vcf \
---info SVTYPE,SVLEN,END \
---format-to-info RE=DV \
---format-to-info-sum DP=DR,DP=DV \
---header $dir_header/harmonized_header.txt \
---header-str 'STRANDS,1,String,Strand orientation of supporting reads'
-</code></pre>
-<p>done</p>
-<h1 id="cutesv_1">cuteSV</h1>
-<p>ls force_call/<em>cuteSV</em> | while read vcf; do
-    name=$(basename $vcf)
-    name=${name%.vcf}</p>
-<pre><code>$harmonisv harmonize \
--i $vcf \
--o ${dir_force}/${name}.harmonized.vcf \
---format-to-info-sum DP=DR,DP=DV \
---header $dir_header/harmonized_header.txt \
---header-str 'STRANDS,1,String,Strand orientation of supporting reads' \
---keep-all
-</code></pre>
-<p>done</p>
-<p>echo "################## 6. Genotype representative SVs ##################"
-dir_genotype="output/genotype/"
-[[ ! -d $dir_genotype ]] &amp;&amp; mkdir -p $dir_genotype</p>
-<p>$harmonisv genotype \
--i ${dir_represent}/All_method.representative.vcf \
--f manifest.txt \
--o ${dir_genotype}/HG002.representative.genotyped.vcf \
---sample HG002</p>
+<h2 id="3-merge-vcfs">3. Merge VCFs</h2>
+<p>Ongoing...</p>
               
             </div>
           </div><footer>
