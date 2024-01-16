@@ -2,7 +2,7 @@
 
 A toolkit to harmonize and filter structural variations across methods and samples.
 
-*** Last updated: 2023-12-05 ***
+*** Last updated: 2024-01-16 ***
 
 ## Features
 - Harmonize SVs discovered by different SV calling methods
@@ -20,11 +20,11 @@ The documentation for below commands are ready now:
 For other commands, please type `harmonisv <command> -h` to get help. I am simplifying the input format and command line options for other commands. The documentation will be updated after that.
 
 ----
-[harmonize]: docs/VCF_manipulation/harmonize.md
-[harmonize-header]: docs/VCF_manipulation/harmonize_header.md
-[sample2pop]: docs/VCF_manipulation/sample2pop.md
-[intersect]: docs/VCF_manipulation/intersect.md
-[represent]: docs/SV_analysis/represent.md
-[genotype]: docs/SV_analysis/genotype.md
-[filter]: docs/SV_analysis/filter.md
-[concordance]: docs/SV_analysis/concordance.md
+[harmonize]: VCF_manipulation/harmonize.md
+[harmonize-header]: VCF_manipulation/harmonize_header.md
+[sample2pop]: VCF_manipulation/sample2pop.md
+[intersect]: VCF_manipulation/intersect.md
+[represent]: SV_analysis/represent.md
+[genotype]: SV_analysis/genotype.md
+[filter]: SV_analysis/filter.md
+[concordance]: SV_analysis/concordance.md

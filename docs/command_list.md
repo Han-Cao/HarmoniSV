@@ -1,6 +1,6 @@
 # Commands list
 
-*** Last updated: 2023-03-19 ***
+*** Last updated: 2024-01-16 ***
 
 **VCF manipulation**
 
@@ -19,11 +19,11 @@
 
 
 ----
-[harmonize]: docs/VCF_manipulation/harmonize.md
-[harmonize-header]: docs/VCF_manipulation/harmonize_header.md
-[sample2pop]: docs/VCF_manipulation/sample2pop.md
-[intersect]: docs/VCF_manipulation/intersect.md
-[represent]: docs/SV_analysis/represent.md
-[genotype]: docs/SV_analysis/genotype.md
-[filter]: docs/SV_analysis/filter.md
-[concordance]: docs/SV_analysis/concordance.md
+[harmonize]: VCF_manipulation/harmonize.md
+[harmonize-header]: VCF_manipulation/harmonize_header.md
+[sample2pop]: VCF_manipulation/sample2pop.md
+[intersect]: VCF_manipulation/intersect.md
+[represent]: SV_analysis/represent.md
+[genotype]: SV_analysis/genotype.md
+[filter]: SV_analysis/filter.md
+[concordance]: SV_analysis/concordance.md
