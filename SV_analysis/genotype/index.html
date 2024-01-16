@@ -194,7 +194,7 @@
 <p>The <code>genotype</code> command integrates information from various SV discovery and force calling methods to genotype SVs with high sensitivity. The genotype of an SV is determined through the following steps:</p>
 <ol>
 <li>
-<p>Extract <code>DP</code>, <code>RE</code> and additional INFO tags from SV calling VCFs and calculate <code>VAF</code>. If a method performs both discovery calling and force calling, the results of force calling will be prioritized if available.</p>
+<p>Extract <code>DP</code>, <code>RE</code> and additional INFO tags from SV calling VCFs and calculate <code>VAF</code>. If a method performs both discovery calling and force calling, the results of force calling will be used.</p>
 </li>
 <li>
 <p>If one method's <code>VAF</code> &gt; heterozygous frequency threshold, it is considered to support the SV and counted in <code>SUPP_METHOD</code>. The maximum number of SV callers using the same aligner is recorded in <code>SUPP_CALLER</code>. For example, if an SV is supported by callers <code>sniffles</code> and <code>cuteSV</code> with aligner <code>minimap2</code>, as well as caller <code>svim</code> with aligner <code>NGMLR</code>, then <code>SUPP_CALLER</code> would be set to 2.</p>

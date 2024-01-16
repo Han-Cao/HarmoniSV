@@ -87,7 +87,7 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#representative-sv">Representative SV</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#example">Example</a>
+    <li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a>
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#1-select-representative-svs-from-svs-merged-across-samples-and-methods">1. Select representative SVs from SVs merged across samples and methods</a>
     </li>
@@ -183,7 +183,7 @@ harmonisv represent [options] -f &lt;file_list&gt; -o &lt;output_vcf&gt; --merge
 <li><code>--by-max TAG</code>: This option selects the SV with the maximum value of <code>INFO/TAG</code>.</li>
 <li><code>--by-freq</code>: This option selects the SV with the maximum frequency of <code>POS</code> and <code>SVLEN</code>. If more than one SV has the same frequency, it selects the one closest to the average <code>POS</code> and <code>SVLEN</code>.</li>
 </ul>
-<h2 id="example">Example</h2>
+<h2 id="examples">Examples</h2>
 <h5 id="1-select-representative-svs-from-svs-merged-across-samples-and-methods">1. Select representative SVs from SVs merged across samples and methods</h5>
 <p>In this example, we will first use <a href="https://github.com/mkirsche/Jasmine">Jasmine</a> to merge SVs across samples and methods, and then select the representative SV based on the prevalence of SVs' positions and lengths.</p>
 <pre><code class="language-bash">
