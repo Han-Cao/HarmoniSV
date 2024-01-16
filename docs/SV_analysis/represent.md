@@ -2,7 +2,7 @@
 
 Select the representative SV from merged SVs
 
-*** Last updated: 2023-12-08 ***
+*** Last updated: 2023-01-16 ***
 
 ## Input requirmenets
 - **VCF**: 
@@ -36,7 +36,7 @@ SV calling results can vary significantly across different methods or samples. T
 - `--by-max TAG`: This option selects the SV with the maximum value of `INFO/TAG`.
 - `--by-freq`: This option selects the SV with the maximum frequency of `POS` and `SVLEN`. If more than one SV has the same frequency, it selects the one closest to the average `POS` and `SVLEN`.
 
-## Example
+## Examples
 
 ##### 1. Select representative SVs from SVs merged across samples and methods
 In this example, we will first use [Jasmine] to merge SVs across samples and methods, and then select the representative SV based on the prevalence of SVs' positions and lengths.

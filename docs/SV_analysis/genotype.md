@@ -2,7 +2,7 @@
 
 Genotype SVs across SV genotyping methods
 
-*** Last updated: 2023-12-08 ***
+*** Last updated: 2023-01-16 ***
 
 ## Input requirmenets
 - **Manifest**:
@@ -48,7 +48,7 @@ harmonisv represent [options] -i <input_vcf> -f <manifest> -o <output_vcf> --sam
 The `genotype` command integrates information from various SV discovery and force calling methods to genotype SVs with high sensitivity. The genotype of an SV is determined through the following steps:
 
 
-1. Extract `DP`, `RE` and additional INFO tags from SV calling VCFs and calculate `VAF`. If a method performs both discovery calling and force calling, the results of force calling will be prioritized if available.
+1. Extract `DP`, `RE` and additional INFO tags from SV calling VCFs and calculate `VAF`. If a method performs both discovery calling and force calling, the results of force calling will be used.
 
 2. If one method's `VAF` > heterozygous frequency threshold, it is considered to support the SV and counted in `SUPP_METHOD`. The maximum number of SV callers using the same aligner is recorded in `SUPP_CALLER`. For example, if an SV is supported by callers `sniffles` and `cuteSV` with aligner `minimap2`, as well as caller `svim` with aligner `NGMLR`, then `SUPP_CALLER` would be set to 2.
 
