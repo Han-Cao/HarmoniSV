@@ -104,7 +104,7 @@ class OutVcf:
             self.logger.info(f"Write output to {self.file_vcf}")        
 
 
-def read_manifest(file_manifest: str, header, default_info: list=[]) -> pd.DataFrame:
+def read_manifest(file_manifest: str, header, default_info: list=None) -> pd.DataFrame:
     """
     Read manifest file (tab-delimited without header)
 
@@ -126,6 +126,9 @@ def read_manifest(file_manifest: str, header, default_info: list=[]) -> pd.DataF
         else:
             logger.error(f"Invalid file list, please make sure there is only one column without header")
             raise SystemExit()
+    
+    if default_info is None:
+        default_info = []
         
     # add info column if not exist
     if 'info' not in df_manifest.columns:
@@ -219,7 +222,7 @@ def vcf_to_df(vcf: pysam.VariantFile, info: list='all', region: str=None, fill_t
     
     info: list of INFO tags to be extracted. If 'all', all INFO tags will be extracted (default)
     region: bcftools region string (default: None)
-    fill_tuple_na: whether to replace NaN if INFO tag is tuple (default: False)
+    fill_tuple_na: whether to replace NaN with tuple of None if INFO tag is tuple (default: False)
 
     For INFO tags with multiple value (i.e., comma in value), store as string
     """
