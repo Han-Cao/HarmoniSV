@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Calculate genotype concordance between two VCFs
-# Created: 8/2/2023
+# Last update: 8-Oct-2024
 # Author: Han Cao
 
 import argparse
@@ -26,6 +26,7 @@ required.add_argument("-r", "--ref", metavar="vcf", type=str, required=True,
 optional_arg = parser.add_argument_group('optional arguments')
 optional_arg.add_argument("--map", metavar="file", type=str, default=None,
                           help="tab-delimited file to map input vcf samples (1st col) to reference vcf samples (2nd col)")
+optional_arg.add_argument('--compare', metavar="alleles", type=str, default="alleles", help="Use which information to determine if 2 variants are the same: alleles (default) or id")
 optional_arg.add_argument("-h", "--help", action='help', help='show this help message and exit')
 
 
@@ -63,7 +64,7 @@ def gt_concordance(gt_in: tuple, gt_ref: tuple) -> tuple:
     # concordance by genotype
     elif ac_in == ac_ref:
         return (1, 1)
-    # if input gneotype is missing, return 0 for both
+    # if input genotype is missing, return 0 for both
     elif ac_in == -1:
         return (0, 0)
     # concordance by existence only
@@ -105,113 +106,50 @@ def variant_concordance(invar: pysam.VariantRecord,
         return (con_gt / n_sample, con_exist / n_sample)
 
 
-def compare_pos(var1: pysam.VariantRecord, var2: pysam.VariantRecord) -> str:
-    """Compare if two variants are identical on the same chromosome"""
-    # return when two variants are matched
-    if (var1.chrom == var2.chrom) and (var1.pos == var2.pos) and (var1.alleles == var2.alleles):
-        return "match"
-    elif var1.pos < var2.pos:
-        return "var1_before_var2"
-    elif var1.pos > var2.pos:
-        return "var1_after_var2"
-    else:
-        return "different_allele"
+def find_variants(vcf:pysam.VariantFile, contig: str, pos: int) -> list:
+    """ Find all variants at a given position """
 
+    var_lst = []
 
-def multiallele_concordance(invar: pysam.VariantRecord,
-                            refvcf: pysam.VariantFile,
-                            outvcf: pysam.VariantFile,
-                            sample_map: dict,
-                            counter_gt: ConcordanceCounter,
-                            counter_exist: ConcordanceCounter) -> None:
-    """Handle multiallelic variants"""
-    outvar = invar.copy()
-
-    # loop all alleles in reference vcf
-    position = f'{invar.chrom}:{invar.pos}-{invar.pos}'
-    for refvar in refvcf.fetch(region=position):
-        if invar.alleles == refvar.alleles:
-            con_gt, con_exist = variant_concordance(invar, refvar, sample_map, counter_gt, counter_exist)
-            outvar.info['CON_GT'] = con_gt
-            outvar.info['CON_EXIST'] = con_exist
-            outvcf.write(outvar)
-            return None
+    # start = pos - 1
+    for variant in vcf.fetch(contig=contig, start=pos-1):
+        if variant.pos == pos:
+            var_lst.append(variant)
+        elif variant.pos > pos:
+            break
     
-    # if no allele can match, set concordance to missing
-    outvar.info['CON_GT'] = None
-    outvar.info['CON_EXIST'] = None
-    outvcf.write(outvar)
-    return None
+    return var_lst
 
 
-def compare_chr(invcf: pysam.VariantFile, 
-                refvcf: pysam.VariantFile, 
-                outvcf: pysam.VariantFile,
-                chr: str, 
-                sample_map: dict,
-                counter_gt: ConcordanceCounter,
-                counter_exist: ConcordanceCounter,
-                verbosity: int=2000):
-    """Compare all variants on the same chromosome"""
-    # initialize
-    invcf_iter = invcf.fetch(region=chr)
-    refvcf_iter = refvcf.fetch(region=chr)
+def process_pos(prev_var: pysam.VariantRecord, invar_lst: list, refvcf: pysam.VariantFile, outvcf: pysam.VariantFile, compare: str,
+                sample_map: dict, counter_gt: ConcordanceCounter, counter_exist: ConcordanceCounter) -> None:
+    """ Process all variants at the same position """
 
-    logger = logging.getLogger(__name__)
+    # only 1 variant at the previous position:
+    if len(invar_lst) == 0:
+        invar_lst.append(prev_var)
 
-    # set flag to indicate if refvcf need next()
-    # when invcf is before refvcf, set flag to False to make refvcf stop at current position
-    ref_flag = True 
+    refvar_lst = find_variants(refvcf, prev_var.contig, prev_var.pos)
+    # key -> variant to index variants
+    refvar_map = {}
 
-    # loop through all variants of invcf
-    for i, invar in enumerate(invcf_iter):
-        if i % verbosity == 0:
-            logger.info(f"Processing variant at {invar.chrom}:{invar.pos} ({invar.id})...")
-
-        outvar = invar.copy()
+    for refvar in refvar_lst:
+        refvar_key = refvar.alleles if compare == "alleles" else refvar.id
+        refvar_map[refvar_key] = refvar
+    
+    for invar in invar_lst:
+        invar_key = invar.alleles if compare == "alleles" else invar.id
+        if invar_key in refvar_map:
+            refvar = refvar_map[invar_key]
+            con_gt, con_exist = variant_concordance(invar, refvar, sample_map, counter_gt, counter_exist)
+        else:
+            con_gt = None
+            con_exist = None
         
-        # loop through all variants of refvcf
-        loop_count = 0
-        while True:
-            loop_count += 1
-            if loop_count > 10000:
-                logger.error(f"Looping too many times at invcf: {invar.chrom}:{invar.pos} ({invar.id})")
-                break
-            # go to next variant of refvcf
-            if ref_flag:
-                try:
-                    refvar = next(refvcf_iter)
-                # if refvcf is at the end, set output concordance as None
-                # iterate to next variant of invcf
-                except StopIteration:
-                    outvar.info['CON_GT'] = None
-                    outvar.info['CON_EXIST'] = None
-                    outvcf.write(outvar)
-                    break
-
-            # compare two variants
-            comp = compare_pos(invar, refvar)
-            if comp == "match":
-                con_gt, con_exist = variant_concordance(invar, refvar, sample_map, counter_gt, counter_exist)
-                outvar.info['CON_GT'] = con_gt
-                outvar.info['CON_EXIST'] = con_exist
-                outvcf.write(outvar)
-                ref_flag = True
-                break
-            elif comp == "var1_before_var2":
-                outvar.info['CON_GT'] = None
-                outvar.info['CON_EXIST'] = None
-                outvcf.write(outvar)
-                ref_flag = False
-                break
-            elif comp == "var1_after_var2":
-                ref_flag = True
-                continue
-            elif comp == "different_allele":
-                ref_flag = False
-                multiallele_concordance(invar, refvcf, outvcf, sample_map, counter_gt, counter_exist)
-                break
-
+        outvar = invar.copy()
+        outvar.info['CON_GT'] = con_gt
+        outvar.info['CON_EXIST'] = con_exist
+        outvcf.write(outvar)
 
 
 def add_header(header: pysam.VariantHeader) -> pysam.VariantHeader:
@@ -251,10 +189,6 @@ def concordanceVCF_main(cmdargs):
     counter_gt = ConcordanceCounter()
     counter_exist = ConcordanceCounter()
 
-    # get all contigs
-    contig_invcf = invcf.header.contigs.keys()
-    contig_refvcf = refvcf.header.contigs.keys()
-
     # get sample map
     if args.map is not None:
         sample_map = read_map(args.map)
@@ -264,24 +198,54 @@ def concordanceVCF_main(cmdargs):
         sample_overlap = [x for x in sample_invcf if x in sample_refvcf]
         sample_map = dict(zip(sample_overlap, sample_overlap))
     
+    # check key
+    if args.compare not in ['alleles', 'id']:
+        raise ValueError(f'--compare must be either "alleles" or "id"')
+    
     logger.info(f'Find {len(sample_map)} samples in both VCF files to compare.')
 
-    # loop through all contigs
-    for chr in contig_invcf:
-        if chr in contig_refvcf:
-            compare_chr(invcf, refvcf, outvcf, chr, sample_map, counter_gt, counter_exist)
+    # loop through all variants of invcf
+    verbosity = 2000
+    prev_var = None
+    invar_working = []
+    for i, cur_var in enumerate(invcf.fetch()):
+        if i % verbosity == 0:
+            logger.info(f"Processing variant at {cur_var.chrom}:{cur_var.pos} ({cur_var.id})...")
+        
+        # make input is biallelic
+        if len(cur_var.alleles) > 2:
+            raise ValueError("Input VCF is not biallelic")
+
+        # get the first variant
+        if prev_var is None:
+            prev_var = cur_var.copy()
+            continue
+
+        # add variants at the same position
+        if cur_var.pos == prev_var.pos:
+            if len(invar_working) == 0:
+                invar_working.append(prev_var)
+            invar_working.append(cur_var)
+        # seen all variants at the pos, process
+        elif cur_var.pos > prev_var.pos:
+            process_pos(prev_var, invar_working, refvcf, outvcf, args.compare, sample_map, counter_gt, counter_exist)
+            invar_working = []
+        # switch to a new chromosome
+        elif cur_var.chrom != prev_var.chrom:
+            process_pos(prev_var, invar_working, refvcf, outvcf, args.compare, sample_map, counter_gt, counter_exist)
+            invar_working = []
         else:
-            logger.warning(f'Contig {chr} is not found in reference VCF file. Set concordance to missing.')
-            for variant in invcf.fetch(region=chr):
-                variant.info['CON_GT'] = None
-                variant.info['CON_EXIST'] = None
-                outvcf.write(variant)
+            raise ValueError("Input VCF is not sorted by position")
+        
+        prev_var = cur_var.copy()
     
+    # process the last position
+    process_pos(prev_var, invar_working, refvcf, outvcf, args.compare, sample_map, counter_gt, counter_exist)
+   
     # summarise concordance results
     logger.info(f'Overall concordance of genotypes: {counter_gt.rate()}')
     logger.info(f'Overall concordance of existence: {counter_exist.rate()}')
     
-
     # close files
     invcf.close()
     refvcf.close()
