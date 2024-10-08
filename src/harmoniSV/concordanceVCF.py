@@ -47,26 +47,26 @@ class ConcordanceCounter:
 
 
 
-GT_DICT = {(None, None): -1,
-           (None, ): -1,
-           (0, 0): 0,
+GT_DICT = {(0, 0): 0,
            (0, 1): 1,
            (1, 0): 1,
            (1, 1): 2}
 
 def gt_concordance(gt_in: tuple, gt_ref: tuple) -> tuple:
     """Compare genotype concordance of two genotypes, return concordance by genotype and existence (i.e., 0/1 = 1/1)"""
+    
+    # if any reference genotype is missing, return None and skip
+    if None in gt_ref:
+        return (None, None)
+    # if any input genotype is missing, return 0 for both
+    if None in gt_in:
+        return (0, 0)
+    
     ac_in = GT_DICT[gt_in]
     ac_ref = GT_DICT[gt_ref]
-    # if reference genotype is missing, return None and skip
-    if ac_ref == -1:
-        return (None, None)
     # concordance by genotype
-    elif ac_in == ac_ref:
+    if ac_in == ac_ref:
         return (1, 1)
-    # if input genotype is missing, return 0 for both
-    elif ac_in == -1:
-        return (0, 0)
     # concordance by existence only
     elif (ac_in > 0) and (ac_ref > 0):
         return (0, 1)
