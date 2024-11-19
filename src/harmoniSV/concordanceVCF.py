@@ -82,13 +82,13 @@ def gt_concordance(gt_in: tuple, gt_ref: tuple) -> tuple:
     """Compare genotype concordance of two genotypes, return concordance by genotype, existence, and weighted concordance code"""
     
     # if any reference genotype is missing, return None and skip
-    if None in gt_ref:
+    if None in gt_ref or None in gt_in:
         return (None, None, None)
     ac_ref = GT_DICT[gt_ref]
 
-    # if any input genotype is missing, return 0 for both
-    if None in gt_in:
-        return (0, 0, -ac_ref - 1)
+    # # if any input genotype is missing, return 0 for both
+    # if None in gt_in:
+    #     return (0, 0, -ac_ref - 1)
     
     ac_in = GT_DICT[gt_in]
     # concordance by genotype
@@ -119,7 +119,7 @@ def variant_concordance(invar: pysam.VariantRecord,
         gt_ref = refvar.samples[sample2]['GT']
         con_gt_i, con_exist_i, gc_code_i = gt_concordance(gt_in, gt_ref)
 
-        # if reference genotype is missing, skip
+        # if input / reference genotype is missing, skip
         if con_gt_i is None:
             n_sample -= 1
             continue
