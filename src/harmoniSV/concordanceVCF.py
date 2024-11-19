@@ -133,7 +133,7 @@ def variant_concordance(invar: pysam.VariantRecord,
     
     # if no sample can be compared, return None
     if n_sample == 0:
-        return (None, None)
+        return (None, None, None)
     else:
         wgc = con_weighted.concordance()
         counter_weighted.add(wgc)
