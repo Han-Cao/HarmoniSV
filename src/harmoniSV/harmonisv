@@ -3,7 +3,7 @@
 # HarmoniSV
 # A toolkit to harmonize and filter structural variations across methods and samples
 #
-# Created: 3/1/2023
+# Last update: 25-Nov-2024
 # Author: Han Cao
 # Contact: hcaoad@connect.ust.hk
 
@@ -13,23 +13,7 @@ import argparse
 import logging
 import sys
 
-from harmonizeVCF import harmonizeVCF_main
-from representSV import representSV_main
-from genotypeSV import genotypeSV_main
-from filterSV import filterSV_main
-from sample2pop import sample2pop_main
-from intersectSV import intersectSV_main
-from concordanceVCF import concordanceVCF_main
-from harmonizeHeader import harmonizeHeader_main
-
-COMMANDS = {'harmonize': harmonizeVCF_main,
-            'harmonize-header': harmonizeHeader_main,
-            'represent': representSV_main,
-            'genotype': genotypeSV_main,
-            'filter': filterSV_main,
-            'sample2pop': sample2pop_main,
-            'intersect': intersectSV_main,
-            'concordance': concordanceVCF_main}
+COMMAND_LIST = ['harmonize', 'harmonize-header', 'represent', 'genotype', 'filter', 'sample2pop', 'intersect', 'concordance']
 
 
 USAGE = f"""
@@ -74,7 +58,7 @@ def main():
                                      formatter_class=argparse.RawDescriptionHelpFormatter, 
                                      usage=argparse.SUPPRESS)
 
-    parser.add_argument("command", metavar="command", choices=COMMANDS.keys(), type=str, default=None,
+    parser.add_argument("command", metavar="command", choices=COMMAND_LIST, type=str, default=None,
                         help="Command to execute")
     parser.add_argument("options", metavar="options", nargs=argparse.REMAINDER,
                         help="Options to pass to the command")
@@ -89,7 +73,38 @@ def main():
                     format='[%(asctime)s] - [%(levelname)s]: %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
     print(f'HarmoniSV: {VERSION}', file=sys.stderr)
-    COMMANDS[args.command](args.options)
+
+    if args.command == 'harmonize':
+        from harmonizeVCF import harmonizeVCF_main
+        harmonizeVCF_main(args.options)
+    
+    elif args.command == 'harmonize-header':
+        from harmonizeHeader import harmonizeHeader_main
+        harmonizeHeader_main(args.options)
+    
+    elif args.command == 'represent':
+        from representSV import representSV_main
+        representSV_main(args.options)
+
+    elif args.command == 'genotype':
+        from genotypeSV import genotypeSV_main
+        genotypeSV_main(args.options)
+
+    elif args.command == 'filter':
+        from filterSV import filterSV_main
+        filterSV_main(args.options)
+
+    elif args.command == 'sample2pop':
+        from sample2pop import sample2pop_main
+        sample2pop_main(args.options)
+
+    elif args.command == 'intersect':
+        from intersectSV import intersectSV_main
+        intersectSV_main(args.options)
+
+    elif args.command == 'concordance':
+        from concordanceVCF import concordanceVCF_main
+        concordanceVCF_main(args.options)
 
 
 if __name__ == "__main__":

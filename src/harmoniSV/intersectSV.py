@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Intersect SVs with genomic features
-# Created: 19/9/2022
+# Last update: 25-Nov-2024
 # Author: Han Cao
 
 
@@ -13,7 +13,7 @@ import pandas as pd
 import pyranges as pr
 
 
-from utils import read_vcf, vcf_to_df, vcf_to_pyranges, parse_cmdargs
+from utils import read_vcf, vcf_to_df, parse_cmdargs
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv intersect",
@@ -37,6 +37,31 @@ parser.add_argument("--overlap", metavar="1", type=str, required=False, default=
 optional_arg = parser.add_argument_group('optional arguments')
 optional_arg.add_argument("-h", "--help", action='help', help='show this help message and exit')
 
+
+def vcf_to_pyranges(vcf: pysam.VariantFile) -> pr.PyRanges:
+    """
+    Convert vcf to pyranges
+
+    Input vcf must have SVTYPE and SVLEN INFO tags
+
+    Output pyranges will contain columns: ID, Chromosome, Start, End
+    """
+    rows = []
+    for variant in vcf.fetch():
+        new_row = {}
+        new_row['ID'] = variant.id
+        new_row['Chromosome'] = variant.chrom
+        new_row['Start'] = variant.start
+        if variant.info['SVTYPE'] == 'INS':
+            new_row['End'] = new_row['Start'] + 1
+        else:
+            new_row['End'] = new_row['Start'] + abs(variant.info['SVLEN'])
+        rows.append(new_row)
+    
+    df = pd.DataFrame(rows)
+    prg = pr.PyRanges(df)
+    
+    return prg
 
 class Feature_range():
     """Parse and intersect feature bed file"""
