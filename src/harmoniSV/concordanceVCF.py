@@ -28,6 +28,8 @@ optional_arg = parser.add_argument_group('optional arguments')
 optional_arg.add_argument("--map", metavar="file", type=str, default=None,
                           help="tab-delimited file to map input vcf samples (1st col) to reference vcf samples (2nd col)")
 optional_arg.add_argument('--compare', metavar="alleles", type=str, default="alleles", help="Use which information to determine if 2 variants are the same: alleles (default) or id")
+optional_arg.add_argument("--include-missing", action="store_true", default=False,
+                          help="Include missing genotypes in --invcf for comparison (default: False)")
 optional_arg.add_argument("-h", "--help", action='help', help='show this help message and exit')
 
 
@@ -65,6 +67,7 @@ def variant_concordance(invar: pysam.VariantRecord,
                         refvar: pysam.VariantRecord, 
                         in_samples: list,
                         ref_samples: list,
+                        include_missing: bool,
                         counter_gt: ConcordanceCounter,
                         counter_exist: ConcordanceCounter,
                         counter_weighted: ConcordanceCounter) -> tuple:
@@ -78,7 +81,10 @@ def variant_concordance(invar: pysam.VariantRecord,
     refvar_gt = np.array(refvar_gt, dtype=np.int8)
 
     # find non-missing genotypes in both VCF
-    idx_cmp = (invar_gt != -1) & (refvar_gt != -1)
+    if include_missing:
+        idx_cmp = refvar_gt != -1
+    else:
+        idx_cmp = (invar_gt != -1) & (refvar_gt != -1)
 
     if np.sum(idx_cmp) == 0:
         return (None, None, None)
@@ -129,6 +135,7 @@ def process_pos(prev_var: pysam.VariantRecord,
                 compare: str,
                 in_samples: list,
                 ref_samples: list,
+                include_missing: bool,
                 counter_gt: ConcordanceCounter, 
                 counter_exist: ConcordanceCounter,
                 counter_weighted: ConcordanceCounter) -> None:
@@ -153,7 +160,8 @@ def process_pos(prev_var: pysam.VariantRecord,
             con_gt, con_exist, con_weighted = variant_concordance(invar, 
                                                                   refvar, 
                                                                   in_samples, 
-                                                                  ref_samples, 
+                                                                  ref_samples,
+                                                                  include_missing,
                                                                   counter_gt, 
                                                                   counter_exist, 
                                                                   counter_weighted)
@@ -250,11 +258,11 @@ def concordanceVCF_main(cmdargs):
             invar_working.append(cur_var)
         # seen all variants at the pos, process
         elif cur_var.pos > prev_var.pos:
-            process_pos(prev_var, invar_working, refvcf, outvcf, args.compare, in_samples, ref_samples, counter_gt, counter_exist, counter_weighted)
+            process_pos(prev_var, invar_working, refvcf, outvcf, args.compare, in_samples, ref_samples, args.include_missing, counter_gt, counter_exist, counter_weighted)
             invar_working = []
         # switch to a new chromosome
         elif cur_var.chrom != prev_var.chrom:
-            process_pos(prev_var, invar_working, refvcf, outvcf, args.compare, in_samples, ref_samples, counter_gt, counter_exist, counter_weighted)
+            process_pos(prev_var, invar_working, refvcf, outvcf, args.compare, in_samples, ref_samples, args.include_missing, counter_gt, counter_exist, counter_weighted)
             invar_working = []
         else:
             raise ValueError("Input VCF is not sorted by position")
@@ -262,7 +270,7 @@ def concordanceVCF_main(cmdargs):
         prev_var = cur_var.copy()
     
     # process the last position
-    process_pos(prev_var, invar_working, refvcf, outvcf, args.compare, in_samples, ref_samples, counter_gt, counter_exist, counter_weighted)
+    process_pos(prev_var, invar_working, refvcf, outvcf, args.compare, in_samples, ref_samples, args.include_missing, counter_gt, counter_exist, counter_weighted)
    
     # summarise concordance results
     logger.info(f'Compared {counter_gt.total} variants')
