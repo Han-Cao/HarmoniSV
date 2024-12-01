@@ -25,6 +25,8 @@ required.add_argument("-r", "--ref", metavar="vcf", type=str, required=True,
                       help="reference vcf file to compare with")
 
 optional_arg = parser.add_argument_group('optional arguments')
+optional_arg.add_argument("--region", metavar="chr[:start-end]", type=str, default=None,
+                          help="region to compare (default: all)")
 optional_arg.add_argument("--map", metavar="file", type=str, default=None,
                           help="tab-delimited file to map input vcf samples (1st col) to reference vcf samples (2nd col)")
 optional_arg.add_argument('--compare', metavar="alleles", type=str, default="alleles", help="Use which information to determine if 2 variants are the same: alleles (default) or id")
@@ -239,7 +241,11 @@ def concordanceVCF_main(cmdargs):
     verbosity = 10000
     prev_var = None
     invar_working = []
-    for i, cur_var in enumerate(invcf.fetch()):
+    if args.region is not None:
+        invcf_iter = invcf.fetch(region=args.region)
+    else:
+        invcf_iter = invcf.fetch()
+    for i, cur_var in enumerate(invcf_iter):
         if i % verbosity == 0:
             logger.info(f"Processing variant at {cur_var.chrom}:{cur_var.pos} ({cur_var.id})...")
         
