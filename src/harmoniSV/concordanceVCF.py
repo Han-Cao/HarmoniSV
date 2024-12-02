@@ -21,7 +21,7 @@ required.add_argument("-i", "--invcf", metavar="vcf", type=str, required=True,
                       help="input vcf file")
 required.add_argument("-o", "--outvcf", metavar="vcf", type=str, required=True,
                       help="ouput vcf file")
-required.add_argument("-r", "--ref", metavar="vcf", type=str, required=True,
+required.add_argument("-r", "--refvcf", metavar="vcf", type=str, required=True,
                       help="reference vcf file to compare with")
 
 optional_arg = parser.add_argument_group('optional arguments')
@@ -32,6 +32,8 @@ optional_arg.add_argument("--map", metavar="file", type=str, default=None,
 optional_arg.add_argument('--compare', metavar="alleles", type=str, default="alleles", help="Use which information to determine if 2 variants are the same: alleles (default) or id")
 optional_arg.add_argument("--include-missing", action="store_true", default=False,
                           help="Include missing genotypes in --invcf for comparison (default: False)")
+optional_arg.add_argument("--pass-only", action="store_true", default=False,
+                          help="Only consider FILTER == PASS variants in -r VCF (default: False)")
 optional_arg.add_argument("-h", "--help", action='help', help='show this help message and exit')
 
 
@@ -116,7 +118,7 @@ def variant_concordance(invar: pysam.VariantRecord,
     return float(gc), float(gc_exist), float(gc_weighted)
 
 
-def find_variants(vcf:pysam.VariantFile, contig: str, pos: int) -> list:
+def find_variants(vcf:pysam.VariantFile, contig: str, pos: int, pass_only: bool) -> list:
     """ Find all variants at a given position """
 
     var_lst = []
@@ -124,6 +126,9 @@ def find_variants(vcf:pysam.VariantFile, contig: str, pos: int) -> list:
     # start = pos - 1
     for variant in vcf.fetch(contig=contig, start=pos-1, stop=pos):
         if variant.pos == pos:
+            if pass_only and ('PASS' not in variant.filter):
+                continue
+
             assert len(variant.alleles) == 2
             var_lst.append(variant)
     
@@ -138,6 +143,7 @@ def process_pos(prev_var: pysam.VariantRecord,
                 in_samples: list,
                 ref_samples: list,
                 include_missing: bool,
+                pass_only: bool,
                 counter_gt: ConcordanceCounter, 
                 counter_exist: ConcordanceCounter,
                 counter_weighted: ConcordanceCounter) -> None:
@@ -147,7 +153,7 @@ def process_pos(prev_var: pysam.VariantRecord,
     if len(invar_lst) == 0:
         invar_lst.append(prev_var)
 
-    refvar_lst = find_variants(refvcf, prev_var.contig, prev_var.pos)
+    refvar_lst = find_variants(refvcf, prev_var.contig, prev_var.pos, pass_only)
     # key -> variant to index variants
     refvar_map = {}
 
@@ -210,7 +216,7 @@ def concordanceVCF_main(cmdargs):
 
     # read input
     invcf = read_vcf(args.invcf)
-    refvcf = read_vcf(args.ref)
+    refvcf = read_vcf(args.refvcf)
 
     # generate output
     new_header = invcf.header
@@ -264,11 +270,11 @@ def concordanceVCF_main(cmdargs):
             invar_working.append(cur_var)
         # seen all variants at the pos, process
         elif cur_var.pos > prev_var.pos:
-            process_pos(prev_var, invar_working, refvcf, outvcf, args.compare, in_samples, ref_samples, args.include_missing, counter_gt, counter_exist, counter_weighted)
+            process_pos(prev_var, invar_working, refvcf, outvcf, args.compare, in_samples, ref_samples, args.include_missing, args.pass_only, counter_gt, counter_exist, counter_weighted)
             invar_working = []
         # switch to a new chromosome
         elif cur_var.chrom != prev_var.chrom:
-            process_pos(prev_var, invar_working, refvcf, outvcf, args.compare, in_samples, ref_samples, args.include_missing, counter_gt, counter_exist, counter_weighted)
+            process_pos(prev_var, invar_working, refvcf, outvcf, args.compare, in_samples, ref_samples, args.include_missing, args.pass_only, counter_gt, counter_exist, counter_weighted)
             invar_working = []
         else:
             raise ValueError("Input VCF is not sorted by position")
@@ -276,7 +282,7 @@ def concordanceVCF_main(cmdargs):
         prev_var = cur_var.copy()
     
     # process the last position
-    process_pos(prev_var, invar_working, refvcf, outvcf, args.compare, in_samples, ref_samples, args.include_missing, counter_gt, counter_exist, counter_weighted)
+    process_pos(prev_var, invar_working, refvcf, outvcf, args.compare, in_samples, ref_samples, args.include_missing, args.pass_only, counter_gt, counter_exist, counter_weighted)
    
     # summarise concordance results
     logger.info(f'Compared {counter_gt.total} variants')
