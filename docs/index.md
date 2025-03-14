@@ -2,7 +2,7 @@
 
 A toolkit to harmonize and filter structural variations across methods and samples.
 
-*** Last updated: 2024-01-16 ***
+***Last updated: 2025-03-14***
 
 ## Features
 - Harmonize SVs discovered by different SV calling methods

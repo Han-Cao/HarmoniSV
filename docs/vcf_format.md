@@ -1,6 +1,6 @@
 # VCF format
 
-*** Last updated: 2023-12-08 ***
+***Last updated: 2025-03-14***
 
 ## Requirements
 - bi-allelic VCF/BCF files following the VCF specification

@@ -1,6 +1,6 @@
 # Quick start
 
-*** Last updated: 2023-03-19 ***
+***Last updated: 2025-03-14***
 
 ## Installation
 ``` bash

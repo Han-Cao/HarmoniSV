@@ -1,6 +1,6 @@
-# *filter*
+# *intersect*
 
-Random forest filter for SVs
+Intersect SVs with genomic features
 
 ***Last updated: 2025-03-14***
 

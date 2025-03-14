@@ -2,7 +2,7 @@
 
 Harmonize SV VCFs across samples and SV calling methods
 
-*** Last updated: 2023-12-08 ***
+***Last updated: 2025-03-14***
 
 ## Input requirmenets
 - **VCF**: 

@@ -2,7 +2,7 @@
 
 Select the representative SV from merged SVs
 
-*** Last updated: 2023-01-16 ***
+***Last updated: 2025-03-14***
 
 ## Input requirmenets
 - **VCF**: 

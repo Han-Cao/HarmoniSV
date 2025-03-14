@@ -2,7 +2,7 @@
 
 Genotype SVs across SV genotyping methods
 
-*** Last updated: 2023-01-16 ***
+***Last updated: 2025-03-14***
 
 ## Input requirmenets
 - **Manifest**:
