@@ -8,7 +8,7 @@
     <title>Tutorial - HarmoniSV</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
         <link href="../css/custom.css" rel="stylesheet" />
     
       <script>
@@ -18,12 +18,11 @@
         var mkdocs_page_url = "/HarmoniSV/tutorial/";
       </script>
     
-    <script src="../js/jquery-3.6.0.min.js" defer></script>
     <!--[if lt IE 9]>
       <script src="../js/html5shiv.min.js"></script>
     <![endif]-->
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-      <script>hljs.initHighlightingOnLoad();</script> 
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
 </head>
 
 <body class="wy-body-for-nav" role="document">
@@ -38,7 +37,7 @@
           0.1.0
         </div><div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
@@ -53,13 +52,21 @@
                 </li>
               </ul>
               <ul class="current">
-                <li class="toctree-l1 current"><a class="reference internal current" href="./">Tutorial</a>
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Tutorial</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#1-sv-discovery-using-various-methods">1. SV Discovery Using Various Methods</a>
+    <li class="toctree-l2"><a class="reference internal" href="#table-of-contents">Table of Contents</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#1-sv-discovery-using-mutliple-methods">1. SV discovery using mutliple methods</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#2-harmonize-vcfs">2. Harmonize VCFs</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#3-merge-vcfs">3. Merge VCFs</a>
+    <li class="toctree-l2"><a class="reference internal" href="#3-remove-duplicated-svs">3. Remove duplicated SVs</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#4-sv-merging">4. SV merging</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#5-sv-re-genotyping">5. SV re-genotyping</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#6-combine-per-sample-sv-genotyping-results">6. Combine per-sample SV genotyping results</a>
     </li>
     </ul>
                 </li>
@@ -78,9 +85,9 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../VCF_manipulation/harmonize/">harmonize</a>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../VCF_manipulation/sample2pop.md">sample2pop</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../VCF_manipulation/sample2pop/">sample2pop</a>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../VCF_manipulation/intersect.md">intersect</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../VCF_manipulation/intersect/">intersect</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">SV analysis</span></p>
@@ -91,7 +98,7 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../SV_analysis/filter/">filter</a>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../SV_analysis/concordance.md">concordance</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../SV_analysis/concordance/">concordance</a>
                   </li>
               </ul>
       </div>
@@ -107,8 +114,8 @@
       <div class="wy-nav-content">
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li>
-      <li>Tutorial</li>
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Tutorial</li>
     <li class="wy-breadcrumbs-aside">
           <a href="https://github.com/Han-Cao/HarmoniSV/docs/tutorial.md" class="icon icon-github"> Edit on GitHub</a>
     </li>
@@ -119,20 +126,44 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="tutorial">Tutorial</h1>
-<p><strong><em> Last updated: 2024-01-16 </em></strong></p>
-<p>This tutorial provides a step-by-step guide on how to utilize <code>harmonisv</code> for post-processing the outcomes of various SV calling methods and conducting joint SV calling across multiple samples and methods. The necessary input data and scripts for this tutorial can be found in the <a href="https://github.com/Han-Cao/HarmoniSV/tree/master/test">test</a> folder on GitHub.</p>
-<h2 id="1-sv-discovery-using-various-methods">1. SV Discovery Using Various Methods</h2>
-<p>Please note that <code>harmonisv</code> itself does not directly perform SV calling. Instead, it is designed to harmonize and integrate the results from any SV calling methods that generate a VCF file following the VCF specification and contains the essential information:</p>
+<p><strong><em>Last updated: 2025-03-14</em></strong></p>
+<p>This tutorial provides a step-by-step guide on how to utilize <code>harmonisv</code> for post-processing the results of various SV calling methods and conducting joint SV calling across multiple samples and methods. The necessary input data and scripts for this tutorial can be found in the <a href="https://github.com/Han-Cao/HarmoniSV/tree/master/test">test</a> folder on GitHub.</p>
+<p>In this tutorial, we use the following tools to showcase the usage of <code>harmonisv</code>:</p>
+<ul>
+<li>aligners: <code>minimap2</code> and <code>NGMLR</code></li>
+<li>SV callers: <code>cuteSV</code>, <code>sniffles</code>, and <code>SVIM</code></li>
+<li>SV merging: <code>jasmine</code></li>
+</ul>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="#1-sv-discovery-using-mutliple-methods">1. SV discovery using multiple methods</a></li>
+<li><a href="#2-harmonize-vcfs">2. Harmonize VCFs</a></li>
+<li><a href="#3-remove-duplicated-svs">3. Remove Duplicated SVs</a></li>
+<li><a href="#4-sv-merging">4. SV merging</a></li>
+<li><a href="#5-sv-re-genotyping">5. SV re-genotyping</a></li>
+<li><a href="#6-combine-per-sample-sv-genotyping-results">6. Combine per-sample SV genotyping results</a></li>
+</ul>
+<h2 id="1-sv-discovery-using-mutliple-methods">1. SV discovery using mutliple methods</h2>
+<p><code>harmonisv</code> is designed to harmonize and integrate the results from different SV calling methods. It requires the input VCF files include the following information:</p>
 <ul>
 <li>Type of SV</li>
 <li>Length of SV</li>
 <li>Sequencing depth for both reference and alternative alleles</li>
 </ul>
-<p>In this tutorial, we employ two aligners, minimap2 and NGMLR, and three SV callers, cuteSV, sniffles, and SVIM, to call SVs in the HG002 sample.</p>
-<p>Align long-read sequencing data to reference:</p>
+<p>We have generated the example VCF files of HG002 chr22 in the <a href="https://github.com/Han-Cao/HarmoniSV/tree/master/test/raw">test/raw</a> folder:</p>
+<ul>
+<li>HG002.minimap2.sniffles.vcf</li>
+<li>HG002.minimap2.svim.vcf</li>
+<li>HG002.minimap2.cuteSV.vcf</li>
+<li>HG002.NGMLR.sniffles.vcf</li>
+<li>HG002.NGMLR.svim.vcf</li>
+<li>HG002.NGMLR.cuteSV.vcf</li>
+</ul>
+<p>These VCF files were generated using the following commands:</p>
 <pre><code class="language-bash">ref=&quot;hs37d5.fa&quot;
 input=&quot;HG002.fasta&quot;
 
+# align long-read to reference
 # minimap2
 minimap2 -L -t 36 --MD -a -x map-pb $ref $input | samtools sort -@ 4 -o $bam
 
@@ -141,9 +172,9 @@ ngmlr --bam-fix -t 40 -x pacbio \
 -r $ref \
 -q $input \
 -o $bam
-</code></pre>
-<p>Call SVs from alignments:</p>
-<pre><code class="language-bash"># sniffles (ver 2.0.6)
+
+# SV calling
+# sniffles (ver 2.0.6)
 sniffles \
 -i $bam \
 -v $vcf \
@@ -162,68 +193,326 @@ cuteSV \
 --diff_ratio_merging_DEL 0.5 \
 --genotype \
 $input $ref $vcf $workdir
-
 </code></pre>
-<p>After running the above commands, we get the following VCF files:</p>
-<ul>
-<li>HG002.minimap2.sniffles.vcf</li>
-<li>HG002.minimap2.svim.vcf</li>
-<li>HG002.minimap2.cuteSV.vcf</li>
-<li>HG002.NGMLR.sniffles.vcf</li>
-<li>HG002.NGMLR.svim.vcf</li>
-<li>HG002.NGMLR.cuteSV.vcf</li>
-</ul>
 <h2 id="2-harmonize-vcfs">2. Harmonize VCFs</h2>
-<p>The output VCF files from different SV calling methods usually have different formats in their <code>INFO</code> and <code>FORMAT</code> fields. To integrate the results from different methods, we first need to harmonize the VCFs to a standard format. This is because when we rename or move VCF tags (e.g., FORMAT/tag to INFO/tag), the newly added tags should also have definition in the header according to the VCF specification. Here, we first use <code>harmonize-header</code> to combine the headers from all input VCFs.</p>
+<p>The output VCF files from different SV calling methods usually have different formats in their <code>INFO</code> and <code>FORMAT</code> fields. To integrate the results from different methods, we need to harmonize the VCFs to a standard format. Here, we first use <code>harmonize-header</code> to combine the headers from all input VCFs.</p>
 <pre><code class="language-bash"># If one tag is defined in multiple VCFs
 # the one from the reference VCF or the first VCF in the list will be used
+dir_header=&quot;output/harmonize_header/&quot;
+[[ ! -d $dir_header ]] &amp;&amp; mkdir -p $dir_header
+
+ls raw/*NGMLR* &gt; $dir_header/NGMLR_vcf_list.txt
+
 harmonisv harmonize-header \
--f vcf_list.txt \                # read VCF list from file
--o harmonized_header.txt \       # output file
--r HG002.minimap2.sniffles.vcf   # reference VCF file (optional)
+-i raw/HG002.minimap2.cuteSV.vcf,raw/HG002.minimap2.sniffles.vcf,raw/HG002.minimap2.svim.vcf \
+-f $dir_header/NGMLR_vcf_list.txt \
+-o $dir_header/harmonized_header.txt \
+-r raw/HG002.minimap2.sniffles.vcf
 </code></pre>
 <p>Then, we can use <code>harmonize</code> to standardize the VCFs:</p>
 <ol>
-<li>reheader with <code>harmonized_header.txt</code></li>
-<li>for the same information stored in different tags, rename them to the same tag</li>
-<li>normalize SV types to the same format (e.g., <code>DUP:TANDEM</code> to <code>DUP</code>)</li>
-<li>extract all required tags to <code>INFO</code> field</li>
-<li>rename SV ID to make them unique across samples and methods</li>
+<li>standardize VCF headers and tag names</li>
+<li>normalize SV types (e.g., <code>DUP:TANDEM</code> to <code>DUP</code>)</li>
+<li>extract depth and number of supporting reads to <code>INFO/DP</code> and <code>INFO/RE</code>, respectively</li>
+<li>rename SV ID to make them unique across samples and methods. By using <code>--id-prefix`` and</code>--rename-id<code>, a unique ID in the format of</code>prefix.chr.svtype.number` will be assigned to each SV.</li>
 </ol>
-<pre><code class="language-bash"># sniffles
-harmonisv harmonize \
--i HG002.minimap2.sniffles.vcf \
--o HG002.minimap2.sniffles.harmonized.vcf \
---info SVTYPE,SVLEN,END,STRANDS=STRAND \        # INFO tags to be kept
---format-to-info RE=DV \                        # extract FORMAT/DV to INFO/RE
---format-to-info-sum DP=DR,DP=DV \              # INFO/DP = FORMAT/DR + FORMAT/DV
---header harmonized_header.txt \                # reheader
---id-prefix HG002.minimap2.sniffles \           # add sample ID and method as prefix to SV ID
---rename-id                                     # rename SV ID to prefix.chr.svtype.number
+<pre><code class="language-bash">dir_harmonize=&quot;output/harmonize/&quot;
+[[ ! -d $dir_harmonize ]] &amp;&amp; mkdir -p $dir_harmonize
+
+# sniffles
+# note: INFO/DP = FORMAT/DR + FORMAT/DV
+ls raw/*sniffles* | while read vcf; do
+    name=$(basename $vcf)
+    name=${name%.vcf}
+
+    harmonisv harmonize \
+    -i $vcf \
+    -o ${dir_harmonize}/${name}.harmonized.vcf \
+    --info SVTYPE,SVLEN,END,STRANDS=STRAND \
+    --format-to-info RE=DV \
+    --format-to-info-sum DP=DR,DP=DV \
+    --header $dir_header/harmonized_header.txt \
+    --header-str 'STRANDS,1,String,Strand orientation of supporting reads' \
+    --id-prefix $name \
+    --rename-id
+
+done
 
 # SVIM
-harmonisv harmonize \
--i HG002.minimap2.svim.vcf \
--o HG002.minimap2.svim.harmonized.vcf \
---info SVTYPE,SVLEN,END,RE=SUPPORT \            # INFO tags to be kept
---format-to-info DP=DP \                        # extract FORMAT/DP to INFO/DP
---DUP DUP,DUP:TANDEM,DUP:INT \                  # normalize SV types
---header harmonized_header.txt \                # reheader
---id-prefix HG002.minimap2.svim \               # add sample ID and method as prefix to SV ID
---rename-id                                     # rename SV ID to prefix.chr.svtype.number
+# note: convert SVTYPE &quot;DUP:TANDEM&quot; and &quot;DUP:INT&quot; to &quot;DUP&quot;
+ls raw/*svim* | while read vcf; do
+    name=$(basename $vcf)
+    name=${name%.vcf}
+
+    harmonisv harmonize \
+    -i $vcf \
+    -o ${dir_harmonize}/${name}.harmonized.vcf \
+    --info SVTYPE,SVLEN,END,RE=SUPPORT \
+    --format-to-info DP=DP \
+    --DUP DUP,DUP:TANDEM,DUP:INT \
+    --header $dir_header/harmonized_header.txt \
+    --header-str 'STRANDS,1,String,Strand orientation of supporting reads' \
+    --id-prefix $name \
+    --rename-id
+done
 
 # cuteSV
-harmonisv harmonize \
--i HG002.minimap2.cuteSV.vcf \
--o HG002.minimap2.cuteSV.harmonized.vcf \
---info SVTYPE,SVLEN,END,RE \                   # INFO tags to be kept
---format-to-info-sum DP=DR,DP=DV \             # INFO/DP = FORMAT/DR + FORMAT/DV
---header harmonized_header.txt \               # reheader    
---id-prefix HG002.minimap2.cuteSV \            # add sample ID and method as prefix to SV ID
---rename-id                                    # rename SV ID to prefix.chr.svtype.number
+ls raw/*cuteSV* | while read vcf; do
+    name=$(basename $vcf)
+    name=${name%.vcf}
+
+    harmonisv harmonize \
+    -i $vcf \
+    -o ${dir_harmonize}/${name}.harmonized.vcf \
+    --info SVTYPE,SVLEN,END,RE \
+    --format-to-info-sum DP=DR,DP=DV \
+    --header $dir_header/harmonized_header.txt \
+    --header-str 'STRANDS,1,String,Strand orientation of supporting reads' \
+    --id-prefix $name \
+    --rename-id
+done
 </code></pre>
-<h2 id="3-merge-vcfs">3. Merge VCFs</h2>
-<p>Ongoing...</p>
+<h2 id="3-remove-duplicated-svs">3. Remove duplicated SVs</h2>
+<p>SV calling methods may redundantly call the same SV. We can use <code>jasmine</code> to identify intra-sample duplicated SVs. The results can be found in <a href="https://github.com/Han-Cao/HarmoniSV/tree/master/test/dup_call">test/dup_call</a></p>
+<pre><code class="language-bash">dir_dupcall=&quot;dup_call/&quot;
+[[ ! -d $dir_dupcall ]] &amp;&amp; mkdir -p $dir_dupcall
+
+ls output/harmonize/*harmonized.vcf | while read vcf; do
+    name=$(basename $vcf)
+    name=${name%.vcf}
+
+    jasmine file_list=$vcf \
+    out_file=${dir_dupcall}/${name}.dup_call.vcf \
+    genome_file=hs37d5.fa \
+    --comma_filelist \
+    max_dist=200 \
+    --allow_intrasample \
+    --nonlinear_dist \
+    --ignore_strand \
+    --keep_var_ids 
+
+    # write duplicated SV list
+    bcftools query -f '%INTRASAMPLE_IDLIST\n' ${dir_dupcall}/${name}.dup_call.vcf \
+    &gt; ${dir_dupcall}/${name}.dup_call.txt
+done
+</code></pre>
+<p>Then, we use <code>represent</code> to remove duplicated SVs by keeping the one with more supporting reads.</p>
+<pre><code class="language-bash">dir_dedup=&quot;output/dedup/&quot;
+[[ ! -d dir_dedup ]] &amp;&amp; mkdir -p $dir_dedup
+
+ls ${dir_harmonize}/*harmonized.vcf | while read vcf; do
+    name=$(basename $vcf)
+    name=${name%.vcf}
+
+    harmonisv represent \
+    -i $vcf \
+    -o ${dir_dedup}/${name}.dedup.vcf \
+    --merge ${dir_dupcall}/${name}.dup_call.txt \
+    --by-max RE \
+    --min-len-input 30 \
+    --min-len-output 30
+done
+</code></pre>
+<h2 id="4-sv-merging">4. SV merging</h2>
+<p>After generating individual SV discovery call set, we next identify non-redundant SVs across samples and methods by using <code>jasmine</code>. The results can be found in the <a href="https://github.com/Han-Cao/HarmoniSV/tree/master/test/sv_merge">test/sv_merge</a> folder.</p>
+<pre><code class="language-bash">dir_merge=&quot;sv_merge/&quot;
+[[ ! -d $dir_merge ]] &amp;&amp; mkdir -p $dir_merge
+
+ls ${dir_harmonize}/*harmonized.vcf &gt; ${dir_merge}/All_method.merge_vcf_list.txt
+
+jasmine \
+file_list=${dir_merge}/All_method.merge_vcf_list.txt \
+out_file=${dir_merge}/All_method.merge.vcf \
+--keep_var_ids \
+--ignore_strand 
+
+bcftools query -f '%IDLIST\n' ${dir_merge}/All_method.merge.vcf &gt; ${dir_merge}/All_method.merge.txt
+</code></pre>
+<p>To select representative SVs among redundant SV calls, we use the <code>represent</code> command to keep the one with most frequent <code>POS</code> and <code>SVLEN</code>.</p>
+<pre><code class="language-bash">dir_represent=&quot;output/represent/&quot;
+[[ ! -d $dir_represent ]] &amp;&amp; mkdir -p $dir_represent
+
+harmonisv represent \
+-f ${dir_merge}/All_method.merge_vcf_list.txt \
+-o ${dir_represent}/All_method.representative.vcf \
+--merge ${dir_merge}/All_method.merge.txt \
+--by-freq \
+--id-prefix All_method \
+--save-id
+</code></pre>
+<h2 id="5-sv-re-genotyping">5. SV re-genotyping</h2>
+<p>The VCF <code>All_method.representative.vcf</code> include all non-redundant SVs discovered from different methods and samples (if more than one). To get a fully genotyped VCF for each sample, we re-genotype those SVs using <code>sniffles</code> and <code>cuteSV</code>. The results can be found in the <a href="https://github.com/Han-Cao/HarmoniSV/tree/master/test/force_call">test/force_call</a> folder.</p>
+<pre><code class="language-bash">dir_force_call=&quot;force_call/&quot;
+[[ ! -d $dir_force_call ]] &amp;&amp; mkdir -p $dir_force_call
+
+# 1. re-genotyping
+# sniffles
+sniffles \
+-i $bam \
+-v &quot;${dir_force_call}/HG002.minimap2.sniffles.vcf&quot; \
+--reference &quot;hs37d5.fa&quot; \
+-t 40 \
+--tandem-repeats &quot;human_hs37d5.trf.bed&quot; \
+--genotype-vcf ${dir_represent}/All_method.representative.vcf
+
+# cuteSV
+cuteSV \
+--max_cluster_bias_INS 100 \
+--diff_ratio_merging_INS 0.3 \
+--max_cluster_bias_DEL 200 \
+--diff_ratio_merging_DEL 0.5 \
+--genotype \
+-t 40 \
+-L -1 \
+-Ivcf ${dir_represent}/All_method.representative.vcf \
+$bam hs37d5.fa &quot;${dir_force_call}/HG002.minimap2.cuteSV.vcf&quot; $workdir
+</code></pre>
+<p>After re-genotyping, we need to harmonize them:</p>
+<pre><code class="language-bash"># 2. harmonize 
+dir_force_call_harmonize=&quot;output/harmonize_force_call/&quot;
+# sniffles
+ls ${dir_force_call}/*sniffles* | while read vcf; do
+    name=$(basename $vcf)
+    name=${name%.vcf}
+
+    harmonisv harmonize \
+    -i $vcf \
+    -o ${dir_force_call_harmonize}/${name}.harmonized.vcf \
+    --info SVTYPE,SVLEN,END \
+    --format-to-info RE=DV \
+    --format-to-info-sum DP=DR,DP=DV \
+    --header $dir_header/harmonized_header.txt \
+    --header-str 'STRANDS,1,String,Strand orientation of supporting reads'
+done
+
+# cuteSV
+ls ${dir_force_call}/*cuteSV* | while read vcf; do
+    name=$(basename $vcf)
+    name=${name%.vcf}
+
+    harmonisv harmonize \
+    -i $vcf \
+    -o ${dir_force_call_harmonize}/${name}.harmonized.vcf \
+    --format-to-info-sum DP=DR,DP=DV \
+    --header $dir_header/harmonized_header.txt \
+    --header-str 'STRANDS,1,String,Strand orientation of supporting reads' \
+    --keep-all
+done
+</code></pre>
+<h2 id="6-combine-per-sample-sv-genotyping-results">6. Combine per-sample SV genotyping results</h2>
+<p>Now, we get 10 VCFs per sample, including 4 discovery VCFs and 6 re-genotyping VCFs. We can use the <code>genotype</code> command to merge the results among all VCFs. This will generate the final per-sample VCF for downstream analysis.</p>
+<pre><code class="language-bash">dir_genotype=&quot;output/genotype/&quot;
+[[ ! -d $dir_genotype ]] &amp;&amp; mkdir -p $dir_genotype
+
+$harmonisv genotype \
+-i ${dir_represent}/All_method.representative.vcf \
+-f manifest.txt \
+-o ${dir_genotype}/HG002.representative.genotyped.vcf \
+--sample HG002
+</code></pre>
+<p>Particularly, the <code>manifest.txt</code> is a tab-separated file with the following columns:</p>
+<ul>
+<li><code>file</code>: path to SV discovery and force calling VCF/BCF file</li>
+<li><code>sample</code>: sample ID</li>
+<li><code>aligner</code>: aligner used to generate the SV call set</li>
+<li><code>caller</code>: SV caller used to generate the SV call set</li>
+<li><code>if_force_call</code>: whether the SV call set is generated by force-calling (1: True, 0: False)</li>
+<li><code>info</code> (optional): INFO tags in additional to <code>DP</code>, <code>RE</code> to be added to the output VCF</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>file</th>
+<th>sample</th>
+<th>aligner</th>
+<th>caller</th>
+<th>is_force_call</th>
+<th>info</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>output/harmonize_force_call/HG002.NGMLR.cuteSV.harmonized.vcf</td>
+<td>HG002</td>
+<td>NGMLR</td>
+<td>cuteSV</td>
+<td>1</td>
+<td>PRECISE,CIPOS,CILEN</td>
+</tr>
+<tr>
+<td>output/harmonize_force_call/HG002.NGMLR.sniffles.harmonized.vcf</td>
+<td>HG002</td>
+<td>NGMLR</td>
+<td>sniffles</td>
+<td>1</td>
+<td></td>
+</tr>
+<tr>
+<td>output/harmonize_force_call/HG002.minimap2.cuteSV.harmonized.vcf</td>
+<td>HG002</td>
+<td>minimap2</td>
+<td>cuteSV</td>
+<td>1</td>
+<td>PRECISE,CIPOS,CILEN</td>
+</tr>
+<tr>
+<td>output/harmonize_force_call/HG002.minimap2.sniffles.harmonized.vcf</td>
+<td>HG002</td>
+<td>minimap2</td>
+<td>sniffles</td>
+<td>1</td>
+<td></td>
+</tr>
+<tr>
+<td>output/harmonize/HG002.NGMLR.cuteSV.harmonized.vcf</td>
+<td>HG002</td>
+<td>NGMLR</td>
+<td>cuteSV</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>output/harmonize/HG002.NGMLR.sniffles.harmonized.vcf</td>
+<td>HG002</td>
+<td>NGMLR</td>
+<td>sniffles</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>output/harmonize/HG002.NGMLR.svim.harmonized.vcf</td>
+<td>HG002</td>
+<td>NGMLR</td>
+<td>svim</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>output/harmonize/HG002.minimap2.cuteSV.harmonized.vcf</td>
+<td>HG002</td>
+<td>minimap2</td>
+<td>cuteSV</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>output/harmonize/HG002.minimap2.sniffles.harmonized.vcf</td>
+<td>HG002</td>
+<td>minimap2</td>
+<td>sniffles</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>output/harmonize/HG002.minimap2.svim.harmonized.vcf</td>
+<td>HG002</td>
+<td>minimap2</td>
+<td>svim</td>
+<td>0</td>
+<td></td>
+</tr>
+</tbody>
+</table>
               
             </div>
           </div><footer>
@@ -263,14 +552,15 @@ harmonisv harmonize \
     
   </span>
 </div>
-    <script>var base_url = '..';</script>
-    <script src="../js/theme_extra.js" defer></script>
-    <script src="../js/theme.js" defer></script>
-      <script src="../search/main.js" defer></script>
-    <script defer>
-        window.onload = function () {
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
             SphinxRtdTheme.Navigation.enable(true);
-        };
+        });
     </script>
 
 </body>

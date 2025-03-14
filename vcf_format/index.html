@@ -8,7 +8,7 @@
     <title>VCF format - HarmoniSV</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
         <link href="../css/custom.css" rel="stylesheet" />
     
       <script>
@@ -18,12 +18,11 @@
         var mkdocs_page_url = "/HarmoniSV/vcf_format/";
       </script>
     
-    <script src="../js/jquery-3.6.0.min.js" defer></script>
     <!--[if lt IE 9]>
       <script src="../js/html5shiv.min.js"></script>
     <![endif]-->
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-      <script>hljs.initHighlightingOnLoad();</script> 
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
 </head>
 
 <body class="wy-body-for-nav" role="document">
@@ -38,7 +37,7 @@
           0.1.0
         </div><div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
@@ -61,7 +60,7 @@
                 </li>
               </ul>
               <ul class="current">
-                <li class="toctree-l1 current"><a class="reference internal current" href="./">VCF format</a>
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">VCF format</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a>
     </li>
@@ -78,9 +77,9 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../VCF_manipulation/harmonize/">harmonize</a>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../VCF_manipulation/sample2pop.md">sample2pop</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../VCF_manipulation/sample2pop/">sample2pop</a>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../VCF_manipulation/intersect.md">intersect</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../VCF_manipulation/intersect/">intersect</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">SV analysis</span></p>
@@ -91,7 +90,7 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../SV_analysis/filter/">filter</a>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../SV_analysis/concordance.md">concordance</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../SV_analysis/concordance/">concordance</a>
                   </li>
               </ul>
       </div>
@@ -107,8 +106,8 @@
       <div class="wy-nav-content">
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li>
-      <li>VCF format</li>
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">VCF format</li>
     <li class="wy-breadcrumbs-aside">
           <a href="https://github.com/Han-Cao/HarmoniSV/docs/vcf_format.md" class="icon icon-github"> Edit on GitHub</a>
     </li>
@@ -119,7 +118,7 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="vcf-format">VCF format</h1>
-<p><strong><em> Last updated: 2023-12-08 </em></strong></p>
+<p><strong><em>Last updated: 2025-03-14</em></strong></p>
 <h2 id="requirements">Requirements</h2>
 <ul>
 <li>bi-allelic VCF/BCF files following the VCF specification</li>
@@ -204,14 +203,15 @@ temporary uncompressed VCF file will be generated if the output is vcf.gz or bcf
     
   </span>
 </div>
-    <script>var base_url = '..';</script>
-    <script src="../js/theme_extra.js" defer></script>
-    <script src="../js/theme.js" defer></script>
-      <script src="../search/main.js" defer></script>
-    <script defer>
-        window.onload = function () {
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
             SphinxRtdTheme.Navigation.enable(true);
-        };
+        });
     </script>
 
 </body>

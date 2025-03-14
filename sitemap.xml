@@ -2,52 +2,54 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://han-cao.github.io/HarmoniSV/</loc>
-         <lastmod>2024-01-16</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2025-03-14</lastmod>
     </url>
     <url>
          <loc>https://han-cao.github.io/HarmoniSV/command_list/</loc>
-         <lastmod>2024-01-16</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2025-03-14</lastmod>
     </url>
     <url>
          <loc>https://han-cao.github.io/HarmoniSV/quick_start/</loc>
-         <lastmod>2024-01-16</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2025-03-14</lastmod>
     </url>
     <url>
          <loc>https://han-cao.github.io/HarmoniSV/tutorial/</loc>
-         <lastmod>2024-01-16</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2025-03-14</lastmod>
     </url>
     <url>
          <loc>https://han-cao.github.io/HarmoniSV/vcf_format/</loc>
-         <lastmod>2024-01-16</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2025-03-14</lastmod>
+    </url>
+    <url>
+         <loc>https://han-cao.github.io/HarmoniSV/SV_analysis/concordance/</loc>
+         <lastmod>2025-03-14</lastmod>
     </url>
     <url>
          <loc>https://han-cao.github.io/HarmoniSV/SV_analysis/filter/</loc>
-         <lastmod>2024-01-16</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2025-03-14</lastmod>
     </url>
     <url>
          <loc>https://han-cao.github.io/HarmoniSV/SV_analysis/genotype/</loc>
-         <lastmod>2024-01-16</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2025-03-14</lastmod>
     </url>
     <url>
          <loc>https://han-cao.github.io/HarmoniSV/SV_analysis/represent/</loc>
-         <lastmod>2024-01-16</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2025-03-14</lastmod>
     </url>
     <url>
          <loc>https://han-cao.github.io/HarmoniSV/VCF_manipulation/harmonize/</loc>
-         <lastmod>2024-01-16</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2025-03-14</lastmod>
     </url>
     <url>
          <loc>https://han-cao.github.io/HarmoniSV/VCF_manipulation/harmonize_header/</loc>
-         <lastmod>2024-01-16</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2025-03-14</lastmod>
+    </url>
+    <url>
+         <loc>https://han-cao.github.io/HarmoniSV/VCF_manipulation/intersect/</loc>
+         <lastmod>2025-03-14</lastmod>
+    </url>
+    <url>
+         <loc>https://han-cao.github.io/HarmoniSV/VCF_manipulation/sample2pop/</loc>
+         <lastmod>2025-03-14</lastmod>
     </url>
 </urlset>
