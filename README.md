@@ -25,7 +25,7 @@ pyranges
 
 ## Quick start
 ``` bash
-cd harmoniSV
+cd src/harmoniSV
 ./harmonisv
 
 HarmoniSV: A toolkit to harmonize and filter structural variantions across methods and samples
