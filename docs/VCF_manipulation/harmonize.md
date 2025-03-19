@@ -2,7 +2,7 @@
 
 Harmonize SV VCFs across samples and SV calling methods
 
-***Last updated: 2025-03-14***
+***Last updated: 2025-03-19***
 
 ## Input requirmenets
 - **VCF**: 
@@ -67,7 +67,7 @@ In this example, we will rename variant ID, normalize SVTYPE, and extract the ba
 
 Please note that SV-calling methods may store this information under different names. For instance, `INFO/SUPPORT` might be used for `RE`, and `FORMAT/DP` for `DP`. The sequencing depth might also be provided separately for REF and ALT alleles (e.g., `FORMAT/DR` and `FORMAT/DV`). Additionally, the same type of SV might have different names in different methods (e.g., `DUP:TANDEM` vs `DUP`). All the harmonized information will be stored in the `INFO` field.
 
-** Sniffles2 (ver 2.0.6) **
+**Sniffles2 (ver 2.0.6)**
 
 ``` bash
 harmonisv harmonize \
@@ -81,7 +81,7 @@ harmonisv harmonize \
 --rename-id                                  # Rename all variant ID
 ```
 
-** SVIM (ver 2.0.0) **
+**SVIM (ver 2.0.0)**
 
 ``` bash
 harmonisv harmonize \                         
@@ -95,7 +95,7 @@ harmonisv harmonize \
 --rename-id                                  # Rename all variant ID
 ```
 
-** cuteSV (ver 2.0.3) **
+**cuteSV (ver 2.0.3)**
 
 ``` bash
 harmonisv harmonize \
