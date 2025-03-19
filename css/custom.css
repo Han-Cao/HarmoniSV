@@ -5,3 +5,8 @@
 .rst-content code {
     font-size: 14px;
 }
+
+/* Increase the width of the content area */
+.wy-nav-content {
+    max-width: 1000px; /* Adjust this value as needed */
+}

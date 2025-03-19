@@ -138,7 +138,7 @@
               
                 <h1 id="harmonize"><em>harmonize</em></h1>
 <p>Harmonize SV VCFs across samples and SV calling methods</p>
-<p><strong><em>Last updated: 2025-03-14</em></strong></p>
+<p><strong><em>Last updated: 2025-03-19</em></strong></p>
 <h2 id="input-requirmenets">Input requirmenets</h2>
 <ul>
 <li><strong>VCF</strong>: <ul>
@@ -193,7 +193,7 @@ done
 <li>RE (number of reads supporting the SV)</li>
 </ul>
 <p>Please note that SV-calling methods may store this information under different names. For instance, <code>INFO/SUPPORT</code> might be used for <code>RE</code>, and <code>FORMAT/DP</code> for <code>DP</code>. The sequencing depth might also be provided separately for REF and ALT alleles (e.g., <code>FORMAT/DR</code> and <code>FORMAT/DV</code>). Additionally, the same type of SV might have different names in different methods (e.g., <code>DUP:TANDEM</code> vs <code>DUP</code>). All the harmonized information will be stored in the <code>INFO</code> field.</p>
-<p>** Sniffles2 (ver 2.0.6) **</p>
+<p><strong>Sniffles2 (ver 2.0.6)</strong></p>
 <pre><code class="language-bash">harmonisv harmonize \
 -i HG002.minimap2.sniffles.vcf \             # input VCF
 -o HG002.minimap2.sniffles.harmonized.vcf \  # output VCF
@@ -204,7 +204,7 @@ done
 --id-prefix HG002.minimap2.sniffles \        # {SAMPLE}.{ALIGNER}.{CALLER}
 --rename-id                                  # Rename all variant ID
 </code></pre>
-<p>** SVIM (ver 2.0.0) **</p>
+<p><strong>SVIM (ver 2.0.0)</strong></p>
 <pre><code class="language-bash">harmonisv harmonize \                         
 -i HG002.minimap2.svim.vcf \                 # input VCF
 -o HG002.minimap2.svim.harmonized.vcf \      # output VCF
@@ -215,7 +215,7 @@ done
 --id-prefix HG002.minimap2.svim \            # {SAMPLE}.{ALIGNER}.{CALLER}
 --rename-id                                  # Rename all variant ID
 </code></pre>
-<p>** cuteSV (ver 2.0.3) **</p>
+<p><strong>cuteSV (ver 2.0.3)</strong></p>
 <pre><code class="language-bash">harmonisv harmonize \
 -i HG002.minimap2.cuteSV.vcf \               # input VCF
 -o HG002.minimap2.cuteSV.harmonized.vcf \    # output VCF
