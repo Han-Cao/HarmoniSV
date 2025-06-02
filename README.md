@@ -15,12 +15,12 @@ git clone https://github.com/Han-Cao/HarmoniSV.git
 ## Dependencies
 HarmoniSV is written in python3.8. The following python modules are required:
 ```
-pysam
-pandas
-numpy
-matplotlib
-scikit-learn
-pyranges
+pysam>=0.22.1
+pandas>=2.0.3
+numpy>=1.24.4
+matplotlib>=3.7.5
+scikit-learn>=1.3.2
+pyranges>=0.1.2
 ```
 
 ## Quick start
@@ -60,5 +60,18 @@ For help on a specific command, run:
     harmonisv <command> -h
 
 ```
+
+## Run time
+The following is the run time of [test.sh](test/test.sh) on a normal personal computer. It process the output of 3 SV callers (i.e., Sniffles2, cuteSV, and SVIM) on HG002 chr22. The time for SV discovery and SV merging by other tools is not included.
+
+```
+User time (seconds): 12.58
+System time (seconds): 14.17
+Elapsed (wall clock) time (h:mm:ss or m:ss): 0:15.30
+```
+
+## License
+
+[MIT License](LICENSE)
 
 [document]: https://han-cao.github.io/HarmoniSV/
