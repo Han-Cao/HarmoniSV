@@ -62,7 +62,7 @@ For help on a specific command, run:
 ```
 
 ## Run time
-The following is the run time of [test.sh](test/test.sh) on a normal personal computer. It process the output of 3 SV callers (i.e., Sniffles2, cuteSV, and SVIM) on HG002 chr22. The time for SV discovery and SV merging by other tools is not included.
+The test code [test.sh](test/test.sh) process the output of 3 SV callers (i.e., Sniffles2, cuteSV, and SVIM) on HG002 chr22. The run time on a PC with i5-10600 is shwon below (excluding time for SV discovery and merging by other tools).
 
 ```
 User time (seconds): 12.58
