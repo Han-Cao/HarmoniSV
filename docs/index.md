@@ -17,6 +17,8 @@ The documentation for below commands are ready now:
 - [represent]
 - [genotype]
 
+The above commands can be used to genotype one sample with multiple SV calling methods, see [tutorial] for more details.
+
 For other commands, please type `harmonisv <command> -h` to get help. I am simplifying the input format and command line options for other commands. The documentation will be updated after that.
 
 ----
@@ -28,3 +30,5 @@ For other commands, please type `harmonisv <command> -h` to get help. I am simpl
 [genotype]: SV_analysis/genotype.md
 [filter]: SV_analysis/filter.md
 [concordance]: SV_analysis/concordance.md
+
+[tutorial]: tutorial.md

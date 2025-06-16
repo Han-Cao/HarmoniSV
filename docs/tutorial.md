@@ -98,7 +98,7 @@ Then, we can use `harmonize` to standardize the VCFs:
 1. standardize VCF headers and tag names
 2. normalize SV types (e.g., `DUP:TANDEM` to `DUP`)
 3. extract depth and number of supporting reads to `INFO/DP` and `INFO/RE`, respectively
-4. rename SV ID to make them unique across samples and methods. By using `--id-prefix`` and `--rename-id`, a unique ID in the format of `prefix.chr.svtype.number` will be assigned to each SV.
+4. rename SV ID to make them unique across samples and methods. By using `--id-prefix` and `--rename-id`, a unique ID in the format of `prefix.chr.svtype.number` will be assigned to each SV.
 
 ```bash
 dir_harmonize="output/harmonize/"
