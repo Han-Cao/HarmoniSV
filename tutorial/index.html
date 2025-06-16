@@ -214,7 +214,7 @@ harmonisv harmonize-header \
 <li>standardize VCF headers and tag names</li>
 <li>normalize SV types (e.g., <code>DUP:TANDEM</code> to <code>DUP</code>)</li>
 <li>extract depth and number of supporting reads to <code>INFO/DP</code> and <code>INFO/RE</code>, respectively</li>
-<li>rename SV ID to make them unique across samples and methods. By using <code>--id-prefix`` and</code>--rename-id<code>, a unique ID in the format of</code>prefix.chr.svtype.number` will be assigned to each SV.</li>
+<li>rename SV ID to make them unique across samples and methods. By using <code>--id-prefix</code> and <code>--rename-id</code>, a unique ID in the format of <code>prefix.chr.svtype.number</code> will be assigned to each SV.</li>
 </ol>
 <pre><code class="language-bash">dir_harmonize=&quot;output/harmonize/&quot;
 [[ ! -d $dir_harmonize ]] &amp;&amp; mkdir -p $dir_harmonize
