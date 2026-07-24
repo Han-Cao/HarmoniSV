@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 # Random forest filter for SVs
-# Created: 12/9/2022
+#
+# Last update: 24-Jul-2026
 # Author: Han Cao
+# Contact: hcaoad@connect.ust.hk
 
 import argparse
 import logging
@@ -18,51 +20,39 @@ from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import roc_auc_score, precision_score
 from sklearn.utils import resample
 
-# # SVM
-# from sklearn.pipeline import Pipeline
-# from sklearn.preprocessing import StandardScaler
-# from sklearn.svm import SVC
-
-from utils import read_vcf, vcf_to_df, parse_cmdargs
+from harmoniSV.utils import read_vcf, parse_cmdargs, read_manifest, manifest_to_df
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv filter",
                                  description="Random forest filter for SVs", 
                                  add_help=False)
 required = parser.add_argument_group('required arguments')
-required.add_argument("-i", "--invcf", metavar="vcf", type=str, required=True,
-                      help="input vcf file")
+required.add_argument("--manifest", metavar="FILE", type=str, required=True,
+                      help="tab-delimited manifest file with columns: file (path to per-sample VCF), sample (sample name)")
 required.add_argument("-o", "--output", metavar="PREFIX", type=str, required=True,
-                      help="ouput prefix")
+                      help="output prefix")
 required.add_argument("--sv-type", metavar="TYPE", type=str, required=True,
                       help="which SVTYPE stored in INFO/SVTYPE to work on")
 required.add_argument("--feature", metavar="tags", type=str, required=True,
                       help="comma-separated INFO tags used as training features")
 
 train_group_args = parser.add_argument_group('training SV group arguments')
-train_group_args.add_argument("--merge", metavar="FILE", type=str, required=False,
-                              help="SV merge results file, one line represent merged SVs separated by comma")
-train_group_args.add_argument("--target-prefix", metavar="PREFIX", type=str, required=False,
-                              help="target ID prefix for SV call set")
 train_group_args.add_argument("--train-size", metavar="0.9", type=float, required=False, default=0.9,
                               help="proportion of SVs used for training (default: 0.9)")
 train_group_args.add_argument("--max-train", metavar="100000", type=int, required=False,
                               help="maximum number of SVs used for training")
-train_group_args.add_argument("--min-support-set", metavar="N", type=int, required=False, default=4,
-                              help="minimum number of supporting SV call set for positive SVs (default: 4)")
 train_group_args.add_argument("--min-re", metavar="N", type=int, required=False, default=None,
-                              help="minimum value of MAX_RE for non-negative SVs (default: None)")
+                              help="call-level filter: minimum value of MAX_RE; calls below this are excluded from training (default: None)")
 train_group_args.add_argument("--min-support-caller", metavar="N", type=int, required=False, default=None,
-                              help="minimum number of SUPP_CALLER to be excluded from negative SV in training (default: None)")
+                              help="call-level filter: if a negative-labeled call has >= N SUPP_CALLER, exclude it from training (too high confidence for a true negative) (default: None)")
 train_group_args.add_argument("--min-support-method", metavar="N", type=int, required=False, default=None,
-                              help="minimum number of SUPP_METHOD to be excluded from negative SV in training, overide --min-support-caller (default: None)")
+                              help="call-level filter: if a negative-labeled call has >= N SUPP_METHOD, exclude it from training; overrides --min-support-caller (default: None)")
 train_group_args.add_argument("--train-sites", metavar="FILE", type=str, required=False,
-                              help="user-specified positive and negative SV sites, tab-separated columns: SV_ID (without sample prefix), label (1: true, 0: false)")
-train_group_args.add_argument("--bench-vcf", metavar="FILE", type=str, required=False,
-                              help="benchmark SV calling vcf file, if not given, will search benchmark SV in --invcf")
+                              help="user-specified positive and negative SV sites, tab-separated columns: SV_ID, label (1: true, 0: false)")
 train_group_args.add_argument("--bench-sites", metavar="FILE", type=str, required=False,
-                              help="ground truth SV for benchmark, tab-separated columns: SV_ID (with sample prefix) and label (1: true, 0: false)")
-
+                              help="ground truth SV for benchmark, tab-separated columns: SV_ID and label (1: true, 0: false)")
+train_group_args.add_argument("--bench-sample", metavar="SAMPLE", type=str, required=False, default=None,
+                              help="comma-separated list of sample names to use for benchmark (default: all samples)")
 
 model_args = parser.add_argument_group('model arguments')
 model_args.add_argument("--n-estimator", metavar="N", type=int, required=False, default=300,
@@ -130,27 +120,6 @@ def extract_uniq_param(param_dict: dict) -> dict:
     
 
 
-def merge_list_to_df(merge_list: list, target_id: str) -> pd.DataFrame:
-    """Summarise SV occurrences in merge list to df"""
-    target_merge = [x for x in merge_list if target_id in x]
-    merge_dict_list = []
-    for merge in target_merge:
-        new_record = {}
-        for sv_id in merge.split(','):
-            set_id = sv_id.split('.')[0]
-            if target_id == set_id:
-                new_record['ID'] = sv_id
-            else:
-                new_record[set_id] = 1
-        merge_dict_list.append(new_record)
-
-    df_merge = pd.DataFrame(merge_dict_list).set_index('ID')
-    df_merge = df_merge.fillna(0)
-    df_merge['support_set'] = df_merge.sum(axis=1)
-
-    return df_merge
-
-
 def read_known_sv(file: str) -> pd.DataFrame:
     """Read known positive and negative SVs"""
     logger = logging.getLogger(__name__)
@@ -164,62 +133,38 @@ def read_known_sv(file: str) -> pd.DataFrame:
     return df
 
 
-def get_df_vcf(vcf: pysam.VariantFile, 
-               sv_type: str,
-               feature_list: list, 
-               merge_list: list=None, 
-               target_id: str=None, 
-               min_support_set: int=None, 
-               min_support_caller: int=None,
-               min_support_method: int=None,
-               min_re: int=None,
-               pos_set: set=None, 
-               neg_set: set=None,
-               feature_only: bool=False) -> pd.DataFrame:
-    """Get dataframe of features and labels for training"""
-    # convert vcf to df
-    if isinstance(feature_list, list):
-        col_list = feature_list.copy()
-        if 'SVTYPE' not in col_list:
-            col_list.append('SVTYPE')
-        if 'AC' not in col_list:
-            col_list.append('AC')
-        if 'SUPP_CALLER' not in col_list:
-            col_list.append('SUPP_CALLER')
-        if 'SUPP_METHOD' not in col_list:
-            col_list.append('SUPP_METHOD')
-        if 'MAX_RE' not in col_list:
-            col_list.append('MAX_RE')
-    else:
-        col_list = feature_list
-        
-    df_vcf = vcf_to_df(vcf, col_list)
-    df_vcf = df_vcf[(df_vcf['SVTYPE'] == sv_type) & (df_vcf['AC'] > 0)]
-    df_vcf = df_vcf.set_index('ID')
-    df_vcf['ID_REPRESENT'] = df_vcf.index.str.replace(r'^.*?\.', '', regex=True)
-    df_vcf['Sample'] = df_vcf.index.str.replace(r'\..*$', '', regex=True)
+def get_df_train(df_vcf: pd.DataFrame,
+                 sv_type: str,
+                 min_support_caller: int=None,
+                 min_support_method: int=None,
+                 min_re: int=None,
+                 pos_set: set=None,
+                 neg_set: set=None) -> pd.DataFrame:
+    """Get dataframe of features and labels for training from manifest-loaded df"""
+    # Filter by SVTYPE and AC
+    df_vcf = df_vcf[(df_vcf['SVTYPE'] == sv_type) & (df_vcf['AC'] > 0)].copy()
 
-    if not feature_only:
+    # Construct composite index: Sample.ID (guarantees uniqueness)
+    df_vcf['uid'] = df_vcf['sample'] + '.' + df_vcf['ID']
+    df_vcf = df_vcf.set_index('uid')
+
+    # Assign site-level labels from train_sites
+    if pos_set is not None and neg_set is not None:
         df_vcf['label'] = -9
+        df_vcf.loc[df_vcf['ID'].isin(pos_set), 'label'] = 1
+        df_vcf.loc[df_vcf['ID'].isin(neg_set), 'label'] = 0
 
-        # get positive and negative SVs
-        if merge_list is not None:
-            df_merge = merge_list_to_df(merge_list, target_id)
-            merge_pos = set(df_merge.index[df_merge['support_set'] >= min_support_set])
-            merge_novel = set(df_merge.index[df_merge['support_set'] == 0])
-            df_vcf = df_vcf.merge(df_merge['support_set'], left_on='ID_REPRESENT', right_index=True, how='left')
-            df_vcf.loc[df_vcf['ID_REPRESENT'].isin(merge_pos), 'label'] = 1
-            if min_support_method is None:
-                df_vcf.loc[df_vcf['ID_REPRESENT'].isin(merge_novel) & (df_vcf['SUPP_CALLER'] < min_support_caller), 'label'] = 0
-            else:
-                df_vcf.loc[df_vcf['ID_REPRESENT'].isin(merge_novel) & (df_vcf['SUPP_METHOD'] < min_support_method), 'label'] = 0
-        
-        if pos_set is not None and neg_set is not None:
-            df_vcf.loc[df_vcf['ID_REPRESENT'].isin(pos_set), 'label'] = 1
-            df_vcf.loc[df_vcf['ID_REPRESENT'].isin(neg_set), 'label'] = 0
-        
+        # Call-level confidence filters (exclude ambiguous calls from training)
         if min_re is not None:
-            df_vcf.loc[df_vcf['MAX_RE'] < min_re, 'label'] = 0
+            # Low-confidence positive calls: exclude from training
+            df_vcf.loc[(df_vcf['label'] == 1) & (df_vcf['MAX_RE'] < min_re), 'label'] = -9
+
+        if min_support_method is not None:
+            # High-confidence negative calls: exclude from training
+            df_vcf.loc[(df_vcf['label'] == 0) & (df_vcf['SUPP_METHOD'] >= min_support_method), 'label'] = -9
+        elif min_support_caller is not None:
+            # High-confidence negative calls: exclude from training
+            df_vcf.loc[(df_vcf['label'] == 0) & (df_vcf['SUPP_CALLER'] >= min_support_caller), 'label'] = -9
 
     return df_vcf
 
@@ -345,7 +290,8 @@ def test_model(model: RandomForestClassifier,
     logger.info(f'Save score distribution to {out_prefix}.score_distribution.pdf')
     logger.info(f'Model roc auc statistic: {round(roc_auc_score(y, y_pred), 4)}')
 
-    df_stat = stat_by_cutoff(y, y_pred, cutoff_list, precision_score)
+    df_stat = stat_by_cutoff(y, y_pred, cutoff_list,
+                             lambda yt, yp: precision_score(yt, yp, zero_division=0))
     df_stat = df_stat.rename(columns={'stat': 'precision'})
     df_stat.to_csv(f'{out_prefix}.cutoff_summary.txt', sep='\t', index=False)
     logger.info(f'Save statistics by cutoff to {out_prefix}.cutoff_summary.txt')
@@ -356,8 +302,7 @@ def test_model(model: RandomForestClassifier,
 def model_worker(df_train: pd.DataFrame,
                  features: list,
                  out_prefix: str,
-                 args: argparse.Namespace,
-                 df_bench: pd.DataFrame = None) -> RandomForestClassifier:
+                 args: argparse.Namespace) -> RandomForestClassifier:
     """Train and evaluate model"""
     logger = logging.getLogger(__name__)
 
@@ -401,13 +346,7 @@ def model_worker(df_train: pd.DataFrame,
                                  y=y_test, 
                                  out_prefix=out_prefix + '.test')
     
-    if df_bench is not None:
-        logger.info('Evaluate model on benchmark set')
-        y_pred_bench = test_model(model=model, 
-                                  X=df_bench[features].to_numpy(), 
-                                  y=df_bench['label'].to_numpy(), 
-                                  out_prefix=out_prefix + '.bench')
-    
+
     return model
 
 
@@ -429,16 +368,8 @@ def write_vcf_filter(invcf: pysam.VariantFile,
 def apply_vcf(invcf: pysam.VariantFile,
               output: str,
               sv_type: str,
-              model: RandomForestClassifier,
-              df_vcf: pd.DataFrame,
-              features: list) -> None:
-    """Apply model to vcf"""
-
-    # apply model to vcf
-    df_apply = df_vcf.copy()
-    df_apply['RF_SCORE'] = model.predict_proba(df_apply[features].to_numpy())[:,1]
-    score = df_apply['RF_SCORE'].round(6).to_dict()
-
+              score: dict) -> None:
+    """Write RF_SCORE to VCF. `score` is {variant_id: float}."""
     # write to vcf
     new_header = invcf.header
     if 'RF_SCORE' not in new_header.info:
@@ -460,92 +391,120 @@ def filterSV_main(cmdargs):
 
     args = parse_cmdargs(parser, cmdargs)
 
-    # read input
-    invcf = read_vcf(args.invcf)
     features = args.feature.split(',')
 
-    # TODO: apply model only
-    if args.apply_model is not None:
-        model = pickle.load(open(args.apply_model, 'rb'))
-        logger.info(f'Load model from {args.apply_model}')
+    # Load manifest
+    default_info = features + ['SVTYPE', 'AC', 'SUPP_CALLER', 'SUPP_METHOD', 'MAX_RE']
+    df_manifest = read_manifest(args.manifest, header=0, default_info=default_info)
 
-        df_vcf = get_df_vcf(vcf=invcf, sv_type=args.sv_type, feature_list=features, feature_only=True)
+    # Validate no duplicate sample names in manifest
+    if df_manifest['sample'].duplicated().any():
+        dups = df_manifest['sample'][df_manifest['sample'].duplicated()].unique()
+        logger.error(f"Duplicate sample names in manifest: {', '.join(dups)}")
+        raise SystemExit()
 
+    # Load all VCF data into one dataframe
+    logger.info('Loading VCF data from manifest')
+    df_all = manifest_to_df(df_manifest)
 
-    if args.merge is not None:
-        merge_list = [line.strip() for line in open(args.merge)]
-    else:
-        merge_list = None
-    
-    if args.train_sites is not None:
-        df_train_sites = read_known_sv(args.train_sites)
-        pos_set = set(df_train_sites.index[df_train_sites['label'] == 1])
-        neg_set = set(df_train_sites.index[df_train_sites['label'] == 0])
-    else:
-        pos_set = None
-        neg_set = None
-    
+    # Filter by SVTYPE and AC
+    df_all = df_all[(df_all['SVTYPE'] == args.sv_type) & (df_all['AC'] > 0)].copy()
 
-    df_vcf = get_df_vcf(vcf=invcf,
-                        sv_type=args.sv_type,
-                        feature_list=features,
-                        merge_list=merge_list,
-                        target_id=args.target_prefix,
-                        min_support_set=args.min_support_set,
-                        min_support_caller=args.min_support_caller,
-                        min_support_method=args.min_support_method,
-                        min_re=args.min_re,
-                        pos_set=pos_set,
-                        neg_set=neg_set)
-    
-    df_train = df_vcf.copy()
+    # Read bench sites (if provided) — needed for both training exclusion and final evaluation
+    df_bench_sites = None
+    bench_samples = None
     if args.bench_sites is not None:
-        bench_set = read_known_sv(args.bench_sites)
-        if args.bench_vcf is not None:
-            bench_vcf = read_vcf(args.bench_vcf)
-            df_bench = get_df_vcf(vcf=bench_vcf, sv_type=args.sv_type, feature_list=features, feature_only=True)
-        else:
-            logger.info('Benchmark sites from input vcf are removed when training model')
-            df_train = df_vcf.loc[df_vcf.index.difference(bench_set.index)]
-        
-        df_bench = df_bench.merge(bench_set, left_index=True, right_index=True, how='inner')
+        df_bench_sites = read_known_sv(args.bench_sites)
+    if args.bench_sample is not None:
+        bench_samples = args.bench_sample.split(',')
 
+    # --apply-model path: skip training, go directly to per-sample application
+    if args.apply_model is not None:
+        with open(args.apply_model, 'rb') as f:
+            model = pickle.load(f)
+        logger.info(f'Load model from {args.apply_model}')
     else:
-        df_bench = None
-    
-    # train and evaluate model
-    logger.info(f'Train model for SVTYPE: {args.sv_type}')
-    model = model_worker(df_train=df_train,
-                         features=features,
-                         out_prefix=args.output,
-                         args=args,
-                         df_bench=df_bench)
-    
+        # Read training sites
+        if args.train_sites is not None:
+            df_train_sites = read_known_sv(args.train_sites)
+            pos_set = set(df_train_sites.index[df_train_sites['label'] == 1])
+            neg_set = set(df_train_sites.index[df_train_sites['label'] == 0])
+        else:
+            logger.error('--train-sites is required when not using --apply-model')
+            raise SystemExit()
 
-    # save model to file
-    logger.info(f'Save model to {args.output}.model')
-    pickle.dump(model, open(f'{args.output}.model', "wb"))
+        # Prepare training dataframe with labels and call-level filters
+        df_train = get_df_train(df_vcf=df_all,
+                                sv_type=args.sv_type,
+                                min_support_caller=args.min_support_caller,
+                                min_support_method=args.min_support_method,
+                                min_re=args.min_re,
+                                pos_set=pos_set,
+                                neg_set=neg_set)
 
-    # apply model to input vcf
-    logger.info(f'Apply model on input vcf, write to {args.output}.vcf.gz')
-    apply_vcf(invcf=invcf,
-              output=args.output + '.vcf.gz',
-              sv_type=args.sv_type,
-              model=model,
-              df_vcf=df_vcf,
-              features=features)
+        # Exclude bench SV IDs from training data (benchmark evaluation happens later)
+        if df_bench_sites is not None:
+            df_train_model = df_train[~df_train['ID'].isin(df_bench_sites.index)]
+            logger.info(f'Excluded {len(df_train) - len(df_train_model)} bench sites from training')
+        else:
+            df_train_model = df_train
 
-    # apply model to bench vcf if provided
-    if args.bench_vcf is not None:
-        logger.info(f'Apply model on benchmark vcf, write to {args.output}.bench.vcf.gz')
-        apply_vcf(invcf=bench_vcf,
-                  output=args.output + '.bench.vcf.gz',
+        # Train and evaluate model (no benchmark evaluation during training)
+        logger.info(f'Train model for SVTYPE: {args.sv_type}')
+        model = model_worker(df_train=df_train_model,
+                             features=features,
+                             out_prefix=args.output,
+                             args=args)
+
+        # Save model to file
+        logger.info(f'Save model to {args.output}.{args.sv_type}.model')
+        with open(f'{args.output}.{args.sv_type}.model', 'wb') as f:
+            pickle.dump(model, f)
+
+    # Apply model per sample
+    for i, row in df_manifest.iterrows():
+        file_vcf = row['file']
+        sample = row['sample']
+        logger.info(f'Apply model to sample: {sample}')
+
+        # Get df slice for this sample
+        df_sample = df_all[df_all['sample'] == sample]
+
+        if len(df_sample) == 0:
+            logger.warning(f'No {args.sv_type} SVs found for sample {sample}, skipping')
+            continue
+
+        # Predict scores
+        y_pred = model.predict_proba(df_sample[features].to_numpy())[:, 1]
+        score = {vid: round(s, 6) for vid, s in zip(df_sample['ID'], y_pred)}
+
+        # Open input VCF and write annotated output
+        invcf = read_vcf(file_vcf)
+        out_path = f"{args.output}.{args.sv_type}.{sample}.vcf.gz"
+        apply_vcf(invcf=invcf,
+                  output=out_path,
                   sv_type=args.sv_type,
-                  model=model,
-                  df_vcf=df_bench,
-                  features=features)
-    
-    invcf.close()
+                  score=score)
+        invcf.close()
+        logger.info(f'Wrote annotated VCF to {out_path}')
 
-    return None
+    # Evaluate model on benchmark set (if provided)
+    if df_bench_sites is not None:
+        logger.info('Evaluate model on benchmark set')
+        if bench_samples is not None:
+            df_bench = df_all[df_all['sample'].isin(bench_samples)].copy()
+        else:
+            df_bench = df_all.copy()
 
+        df_bench = df_bench[df_bench['ID'].isin(df_bench_sites.index)].merge(
+            df_bench_sites['label'], left_on='ID', right_index=True, how='inner')
+        
+        if len(df_bench) > 0:
+            test_model(model=model,
+                       X=df_bench[features].to_numpy(),
+                       y=df_bench['label'].to_numpy(),
+                       out_prefix=args.output + '.bench')
+        else:
+            logger.warning('No bench sites matched in the input VCFs, skipping benchmark evaluation')
+
+    logger.info('Done')

@@ -110,8 +110,10 @@ def read_manifest(file_manifest: str, header, default_info: list=None) -> pd.Dat
     Read manifest file (tab-delimited without header)
 
     Format:
-    Column 1: <file_vcf>, one file per line
-    Column 2 (optional): <info_tag>, comma separated list of additional INFO tags to be extracted, all if not specified
+    Column 1: <file>, one file per line
+    Other columns (optional): 
+        - <info>, comma separated list of additional INFO tags to be extracted, all if not specified
+        - <customized header>, any customized headers
     """
 
     logger = logging.getLogger(__name__)
@@ -157,6 +159,10 @@ def manifest_to_df(df_manifest: pd.DataFrame, region: str=None) -> pd.DataFrame:
         vcf = read_vcf(file_vcf)
         df_vcf = vcf_to_df(vcf, info, region)
         df_vcf['file_idx'] = i
+        # Add extra manifest columns (e.g., sample, or any custom column)
+        for col in df_manifest.columns:
+            if col not in ('file', 'info'):
+                df_vcf[col] = row[col]
         lst_df.append(df_vcf)
         vcf.close()
 

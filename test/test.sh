@@ -181,6 +181,33 @@ dir_genotype="output/genotype/"
 
 harmonisv genotype \
 -i ${dir_represent}/All_method.representative.vcf \
--f manifest.txt \
+-f manifest_genotype.txt \
 -o ${dir_genotype}/HG002.representative.genotyped.vcf \
 --sample HG002
+
+
+echo "################## 7. SV filtering ##################"
+dir_filter="output/filter/"
+[[ ! -d $dir_filter ]] && mkdir -p $dir_filter
+
+harmonisv filter \
+--manifest manifest_filter.txt \
+--output ${dir_filter}/model_training \
+--sv-type INS \
+--feature "SVLEN,MEAN_VAF,STD_VAF,DP_MINIMAP2_CUTESV,VAF_MINIMAP2_CUTESV,VAF_MINIMAP2_SVIM,DP_NGMLR_CUTESV,VAF_NGMLR_CUTESV,VAF_NGMLR_SVIM" \
+--train-sites filter/train_sites.txt \
+--bench-sites filter/bench_sites.txt \
+--bench-sample HG002 \
+--train-size 0.8 \
+--n-iter 10 \
+--max-depth 7:9:1 \
+--min-samples-leaf 1,5,10 \
+--seed 42
+
+harmonisv filter \
+--manifest manifest_filter.txt \
+--output ${dir_filter}/filtered_SV \
+--apply-model ${dir_filter}/model_training.INS.model \
+--sv-type INS \
+--feature "SVLEN,MEAN_VAF,STD_VAF,DP_MINIMAP2_CUTESV,VAF_MINIMAP2_CUTESV,VAF_MINIMAP2_SVIM,DP_NGMLR_CUTESV,VAF_NGMLR_CUTESV,VAF_NGMLR_SVIM" \
+--seed 42
