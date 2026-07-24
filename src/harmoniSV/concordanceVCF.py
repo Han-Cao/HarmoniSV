@@ -10,7 +10,7 @@ import logging
 import pysam
 import numpy as np
 
-from utils import read_vcf, parse_cmdargs
+from harmoniSV.utils import read_vcf, parse_cmdargs
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv concordance",

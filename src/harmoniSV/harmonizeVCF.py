@@ -11,7 +11,7 @@ import functools
 import logging
 import os
 
-from utils import read_vcf, OutVcf, IdGenerator, ProgressLogger, parse_cmdargs
+from harmoniSV.utils import read_vcf, OutVcf, IdGenerator, ProgressLogger, parse_cmdargs
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv harmonize",

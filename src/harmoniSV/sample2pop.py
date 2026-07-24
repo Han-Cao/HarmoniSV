@@ -13,7 +13,7 @@ import pysam
 import pandas as pd
 import numpy as np
 
-from utils import read_vcf, parse_info, parse_cmdargs
+from harmoniSV.utils import read_vcf, parse_info, parse_cmdargs
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv sample2pop",

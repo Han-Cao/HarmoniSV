@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "HarmoniSV"
+version = "0.1.0"
+description = "A toolkit to harmonize and filter structural variations across methods and samples."
+authors = [
+    { name = "Han Cao", email = "hcaoad@connect.ust.hk" },
+]
+dependencies = [
+    "pysam",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "scikit-learn",
+    "pyranges"
+]
+requires-python = ">=3.8"
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "pytest",
+    "pytest-order",
+    "pytest-cov"
+]
+doc = [
+    "mkdocs"
+]
+
+[project.scripts]
+harmonisv = "harmoniSV.cli:main"
+
+[tool.coverage.run]
+patch = ["subprocess"]

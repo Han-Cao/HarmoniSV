@@ -8,7 +8,7 @@ import pysam
 import argparse
 import logging
 
-from utils import parse_cmdargs
+from harmoniSV.utils import parse_cmdargs
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv harmonize-header",

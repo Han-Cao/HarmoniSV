@@ -13,7 +13,7 @@ import pandas as pd
 import pyranges as pr
 
 
-from utils import read_vcf, vcf_to_df, parse_cmdargs
+from harmoniSV.utils import read_vcf, vcf_to_df, parse_cmdargs
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv intersect",

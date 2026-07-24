@@ -75,35 +75,35 @@ def main():
     print(f'HarmoniSV: {VERSION}', file=sys.stderr)
 
     if args.command == 'harmonize':
-        from harmonizeVCF import harmonizeVCF_main
+        from harmoniSV.harmonizeVCF import harmonizeVCF_main
         harmonizeVCF_main(args.options)
     
     elif args.command == 'harmonize-header':
-        from harmonizeHeader import harmonizeHeader_main
+        from harmoniSV.harmonizeHeader import harmonizeHeader_main
         harmonizeHeader_main(args.options)
     
     elif args.command == 'represent':
-        from representSV import representSV_main
+        from harmoniSV.representSV import representSV_main
         representSV_main(args.options)
 
     elif args.command == 'genotype':
-        from genotypeSV import genotypeSV_main
+        from harmoniSV.genotypeSV import genotypeSV_main
         genotypeSV_main(args.options)
 
     elif args.command == 'filter':
-        from filterSV import filterSV_main
+        from harmoniSV.filterSV import filterSV_main
         filterSV_main(args.options)
 
     elif args.command == 'sample2pop':
-        from sample2pop import sample2pop_main
+        from harmoniSV.sample2pop import sample2pop_main
         sample2pop_main(args.options)
 
     elif args.command == 'intersect':
-        from intersectSV import intersectSV_main
+        from harmoniSV.intersectSV import intersectSV_main
         intersectSV_main(args.options)
 
     elif args.command == 'concordance':
-        from concordanceVCF import concordanceVCF_main
+        from harmoniSV.concordanceVCF import concordanceVCF_main
         concordanceVCF_main(args.options)
 
 

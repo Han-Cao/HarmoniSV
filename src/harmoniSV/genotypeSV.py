@@ -13,7 +13,7 @@ import pysam.bcftools
 import pandas as pd
 import numpy as np
 
-from utils import read_vcf, OutVcf, read_manifest, vcf_to_df, ProgressLogger, parse_cmdargs
+from harmoniSV.utils import read_vcf, OutVcf, read_manifest, vcf_to_df, ProgressLogger, parse_cmdargs
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv genotype",

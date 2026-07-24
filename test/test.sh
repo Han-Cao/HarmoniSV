@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# test run of harmoniSV
-harmonisv="../src/harmoniSV/harmonisv"
-chmod +x $harmonisv
-
 # harmonize headers from list of input vcf files
 echo "################## 1. harmonize-header ##################"
 dir_header="output/harmonize_header/"
@@ -11,7 +7,7 @@ dir_header="output/harmonize_header/"
 
 ls raw/*NGMLR* > $dir_header/NGMLR_vcf_list.txt
 
-$harmonisv harmonize-header \
+harmonisv harmonize-header \
 -i raw/HG002.minimap2.cuteSV.vcf,raw/HG002.minimap2.sniffles.vcf,raw/HG002.minimap2.svim.vcf \
 -f $dir_header/NGMLR_vcf_list.txt \
 -o $dir_header/harmonized_header.txt \
@@ -27,7 +23,7 @@ ls raw/*sniffles* | while read vcf; do
     name=$(basename $vcf)
     name=${name%.vcf}
 
-    $harmonisv harmonize \
+    harmonisv harmonize \
     -i $vcf \
     -o ${dir_harmonize}/${name}.harmonized.vcf \
     --info SVTYPE,SVLEN,END,STRANDS=STRAND \
@@ -45,7 +41,7 @@ ls raw/*svim* | while read vcf; do
     name=$(basename $vcf)
     name=${name%.vcf}
 
-    $harmonisv harmonize \
+    harmonisv harmonize \
     -i $vcf \
     -o ${dir_harmonize}/${name}.harmonized.vcf \
     --info SVTYPE,SVLEN,END,RE=SUPPORT \
@@ -62,7 +58,7 @@ ls raw/*cuteSV* | while read vcf; do
     name=$(basename $vcf)
     name=${name%.vcf}
 
-    $harmonisv harmonize \
+    harmonisv harmonize \
     -i $vcf \
     -o ${dir_harmonize}/${name}.harmonized.vcf \
     --info SVTYPE,SVLEN,END,RE \
@@ -106,7 +102,7 @@ ls ${dir_harmonize}/*harmonized.vcf | while read vcf; do
     name=$(basename $vcf)
     name=${name%.vcf}
 
-    $harmonisv represent \
+    harmonisv represent \
     -i $vcf \
     -o ${dir_dedup}/${name}.dedup.vcf \
     --merge ${dir_dupcall}/${name}.dup_call.txt \
@@ -134,7 +130,7 @@ echo "################## 4. Find representative SVs among different methods ####
 dir_represent="output/represent/"
 [[ ! -d $dir_represent ]] && mkdir -p $dir_represent
 
-$harmonisv represent \
+harmonisv represent \
 -f ${dir_merge}/All_method.merge_vcf_list.txt \
 -o ${dir_represent}/All_method.representative.vcf \
 --merge ${dir_merge}/All_method.merge.txt \
@@ -154,7 +150,7 @@ ls force_call/*sniffles* | while read vcf; do
     name=$(basename $vcf)
     name=${name%.vcf}
 
-    $harmonisv harmonize \
+    harmonisv harmonize \
     -i $vcf \
     -o ${dir_force}/${name}.harmonized.vcf \
     --info SVTYPE,SVLEN,END \
@@ -170,7 +166,7 @@ ls force_call/*cuteSV* | while read vcf; do
     name=$(basename $vcf)
     name=${name%.vcf}
 
-    $harmonisv harmonize \
+    harmonisv harmonize \
     -i $vcf \
     -o ${dir_force}/${name}.harmonized.vcf \
     --format-to-info-sum DP=DR,DP=DV \
@@ -183,7 +179,7 @@ echo "################## 6. Genotype representative SVs ##################"
 dir_genotype="output/genotype/"
 [[ ! -d $dir_genotype ]] && mkdir -p $dir_genotype
 
-$harmonisv genotype \
+harmonisv genotype \
 -i ${dir_represent}/All_method.representative.vcf \
 -f manifest.txt \
 -o ${dir_genotype}/HG002.representative.genotyped.vcf \

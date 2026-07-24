@@ -11,7 +11,7 @@ import pandas as pd
 import logging
 import os
 
-from utils import IdGenerator, read_vcf, OutVcf, vcf_to_df, read_manifest, manifest_to_df, ProgressLogger, parse_cmdargs
+from harmoniSV.utils import IdGenerator, read_vcf, OutVcf, vcf_to_df, read_manifest, manifest_to_df, ProgressLogger, parse_cmdargs
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv represent",
