@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 # Select representative SV after merging
-# Created: 18/8/2022
+#
+# Last update: 24-Jul-2026
 # Author: Han Cao
+# Contact: hcaoad@connect.ust.hk
 
 import pysam
 import pysam.bcftools

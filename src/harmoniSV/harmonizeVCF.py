@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 # Harmonize SV VCFs from across samples and SV calling methods
-# Created: 12/8/2022
+#
+# Last update: 24-Jul-2026
 # Author: Han Cao
+# Contact: hcaoad@connect.ust.hk
 
 import pysam
 import pysam.bcftools

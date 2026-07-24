@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 # Utils of harmoniSV
-# Last update: 25-Nov-2024
+#
+# Last update: 24-Jul-2026
 # Author: Han Cao
+# Contact: hcaoad@connect.ust.hk
 
 import logging
 import sys

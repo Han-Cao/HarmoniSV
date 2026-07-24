@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 # Calculate genotype concordance between two VCFs
-# Last update: 8-Oct-2024
+#
+# Last update: 24-Jul-2026
 # Author: Han Cao
+# Contact: hcaoad@connect.ust.hk
 
 import argparse
 import logging

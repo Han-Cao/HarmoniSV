@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 # Convert single-sample VCF to multi-sample VCF
-# Created: 23/12/2022
+#
+# Last update: 24-Jul-2026
 # Author: Han Cao
+# Contact: hcaoad@connect.ust.hk
 
 import argparse
 import logging
