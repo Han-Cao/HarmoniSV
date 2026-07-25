@@ -48,13 +48,15 @@
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#features">Features</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#important">Important</a>
+    <li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#quick-start">Quick start</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#table-of-contents">Table of contents</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#license">License</a>
     </li>
     </ul>
-                </li>
-              </ul>
-              <ul>
-                <li class="toctree-l1"><a class="reference internal" href="quick_start/">Quick start</a>
                 </li>
               </ul>
               <ul>
@@ -117,29 +119,68 @@
               
                 <h1 id="harmonisv">HarmoniSV</h1>
 <p>A toolkit to harmonize and filter structural variations across methods and samples.</p>
-<p><strong><em>Last updated: 2025-03-14</em></strong></p>
+<p><strong><em>Last updated: 2026-07-25</em></strong></p>
 <h2 id="features">Features</h2>
 <ul>
 <li>Harmonize SVs discovered by different SV calling methods</li>
 <li>Filter high-confidence SVs with a random forest classifier</li>
-<li>Fast VCF manipulation, annotation, and conversion</li>
+<li>Fast VCF manipulation, annotation, and conversion for SVs</li>
 </ul>
-<h2 id="important">Important</h2>
-<p>The documentation for below commands are ready now:</p>
+<h2 id="installation">Installation</h2>
+<p>Clone the repository:</p>
+<pre><code class="language-bash">git clone https://github.com/Han-Cao/HarmoniSV.git
+</code></pre>
+<p>Make sure you have Python 3.8+ and pip installed. Then, install the tool and its dependencies:</p>
+<pre><code class="language-bash">pip install .
+</code></pre>
+<h2 id="quick-start">Quick start</h2>
+<pre><code class="language-bash">harmonisv
+
+HarmoniSV: A toolkit to harmonize and filter structural variantions across methods and samples
+Version: 0.1.0
+
+Usage: harmonisv &lt;command&gt; [options]
+
+Commands:
+
+ -- VCF manipulation
+    harmonize          Harmonize SV VCFs across samples and SV calling methods
+    harmonize-header   Harmonize VCF headers
+    sample2pop         Convert single-sample VCF to multi-sample VCF
+    intersect          Intersect SVs with genomic features
+
+ -- Analysis on SV callset
+    represent          Select the representative SV from merged SVs
+    genotype           Genotype SVs across SV genotyping methods
+    filter             Random forest filter for SVs
+    concordance        Calculate genotype concordance between two VCFs
+
+
+Note:
+    1. All input VCFs MUST follow the VCF specification
+    2. Some commands assume unique SV IDs to index SVs
+    3. The input/output VCF format (i.e., vcf, vcf.gz, bcf) will be automatically detected. However, a 
+       temporary uncompressed VCF file will be generated if the output is vcf.gz or bcf
+
+
+For help on a specific command, run:
+    harmonisv &lt;command&gt; -h
+
+</code></pre>
+<h2 id="table-of-contents">Table of contents</h2>
 <ul>
-<li><a href="VCF_manipulation/harmonize_header/">harmonize-header</a></li>
-<li><a href="VCF_manipulation/harmonize/">harmonize</a></li>
-<li><a href="SV_analysis/represent/">represent</a></li>
-<li><a href="SV_analysis/genotype/">genotype</a></li>
+<li><a href="tutorial/">Tutorial</a></li>
+<li><a href="command_list/">Command list</a></li>
+<li><a href="vcf_format/">VCF format</a></li>
 </ul>
-<p>The above commands can be used to genotype one sample with multiple SV calling methods, see <a href="tutorial/">tutorial</a> for more details.</p>
-<p>For other commands, please type <code>harmonisv &lt;command&gt; -h</code> to get help. I am simplifying the input format and command line options for other commands. The documentation will be updated after that.</p>
+<h2 id="license">License</h2>
+<p><a href="LICENSE">MIT License</a></p>
 <hr />
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="quick_start/" class="btn btn-neutral float-right" title="Quick start">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="tutorial/" class="btn btn-neutral float-right" title="Tutorial">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -167,7 +208,7 @@
     
     
     
-      <span><a href="quick_start/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="tutorial/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
@@ -187,5 +228,5 @@
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2025-06-16 03:27:34.365850+00:00
+Build Date UTC : 2026-07-25 09:22:23.627103+00:00
 -->

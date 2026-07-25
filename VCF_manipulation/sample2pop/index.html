@@ -48,10 +48,6 @@
                 </li>
               </ul>
               <ul>
-                <li class="toctree-l1"><a class="reference internal" href="../../quick_start/">Quick start</a>
-                </li>
-              </ul>
-              <ul>
                 <li class="toctree-l1"><a class="reference internal" href="../../tutorial/">Tutorial</a>
                 </li>
               </ul>
@@ -71,6 +67,36 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">sample2pop</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#input-requirements">Input requirements</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#output">Output</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#merge-rules">Merge rules</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#info-to-format">INFO to FORMAT</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#1-basic-merge-of-two-per-sample-filtered-vcfs">1. Basic merge of two per-sample filtered VCFs</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#arguments">Arguments</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#inputoutput-arguments">Input/Output arguments:</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#merge-rule-arguments-all-accept-wildcards">Merge rule arguments (all accept wildcards *):</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#format-arguments">FORMAT arguments:</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#other-arguments">Other arguments:</a>
+    </li>
+        </ul>
+    </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../intersect/">intersect</a>
@@ -113,9 +139,140 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="sample2pop"><em>sample2pop</em></h1>
-<p>Convert single-sample VCF to multi-sample VCF</p>
-<p><strong><em>Last updated: 2025-03-14</em></strong></p>
-<p>Documentation in progress</p>
+<p>Convert per-sample VCFs to a multi-sample population VCF</p>
+<p><strong><em>Last updated: 2026-07-25</em></strong></p>
+<h2 id="overview">Overview</h2>
+<p>The <code>sample2pop</code> command merges multiple per-sample VCFs into a single multi-sample (population) VCF. Variants are merged across samples by their ID, and INFO and FORMAT fields are merged according to user-defined rules.</p>
+<h2 id="input-requirements">Input requirements</h2>
+<ul>
+<li>
+<p><strong>Manifest</strong>:</p>
+<ul>
+<li><strong>Format</strong>: tab-separated file with header.</li>
+<li><strong>Columns</strong>:<ul>
+<li><code>file</code>: path to per-sample VCF/BCF file</li>
+<li><code>sample</code>: sample name to be used in the output VCF. Sample names must be unique.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Per-sample VCF</strong>:</p>
+<ul>
+<li><strong>Format</strong>: bi-allelic VCF/BCF files following the VCF specification.</li>
+<li><strong>ID</strong>: unique within each per-sample VCF. Variants are merged across samples by ID.</li>
+</ul>
+</li>
+</ul>
+<h2 id="output">Output</h2>
+<ul>
+<li><strong>Multi-sample VCF</strong>: a single VCF/BCF file containing all samples.<ul>
+<li><strong>ID</strong>: same as the per-sample VCF ID.</li>
+<li><strong>INFO</strong>: merged according to user-specified rules (see below). <code>AC</code> and <code>AN</code> are automatically recalculated as the sum across samples.</li>
+<li><strong>FORMAT</strong>: per-sample fields. <code>GT</code> is always included; <code>FT_SAMPLE</code> records the per-sample FILTER status. Additional FORMAT tags are preserved via <code>--keep-format</code>, and INFO tags can be moved to FORMAT via <code>--info-to-format</code>.</li>
+</ul>
+</li>
+</ul>
+<h2 id="merge-rules">Merge rules</h2>
+<p>For each INFO field and variant-level attribute, the user specifies a merge rule that determines how values from multiple samples are combined. Fields not mentioned in any rule are dropped. Rules accept wildcards (<code>*</code>) to match groups of INFO tags.</p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>First</td>
+<td><code>--info-first</code></td>
+<td>Use the first non-missing value across samples</td>
+</tr>
+<tr>
+<td>Sum</td>
+<td><code>--info-sum</code></td>
+<td>Sum of values across samples (missing treated as 0)</td>
+</tr>
+<tr>
+<td>Average</td>
+<td><code>--info-avg</code></td>
+<td>Mean of values across samples (missing excluded)</td>
+</tr>
+<tr>
+<td>Minimum</td>
+<td><code>--info-min</code></td>
+<td>Minimum value across samples (missing excluded)</td>
+</tr>
+<tr>
+<td>Maximum</td>
+<td><code>--info-max</code></td>
+<td>Maximum value across samples (missing excluded)</td>
+</tr>
+<tr>
+<td>Concatenate</td>
+<td><code>--info-concat</code></td>
+<td>Comma-separated string of all non-missing values</td>
+</tr>
+</tbody>
+</table>
+<h2 id="info-to-format">INFO to FORMAT</h2>
+<p>The <code>--info-to-format</code> option moves specified INFO tags into the per-sample FORMAT field. This is useful for retaining useful information of individual SV calls (e.g., <code>RF_SCORE</code>).</p>
+<p>The per-sample FILTER status is always recorded in <code>FORMAT/FT_SAMPLE</code> as a string. If <code>--filter-GT</code> is used, genotypes of variants that did not pass filters are set to <code>./.</code></p>
+<h2 id="usage">Usage</h2>
+<pre><code class="language-bash">harmonisv sample2pop [options] --manifest &lt;manifest.txt&gt; -o &lt;output.vcf.gz&gt;
+</code></pre>
+<h2 id="examples">Examples</h2>
+<h5 id="1-basic-merge-of-two-per-sample-filtered-vcfs">1. Basic merge of two per-sample filtered VCFs</h5>
+<p>The following command merges two per-sample VCFs into a multi-sample VCF, with the <code>GT</code> FORMAT field and the <code>SVTYPE</code>, <code>SVLEN</code>, and <code>END</code> INFO fields unchanged. All depth-related INFO fields (<code>DP*</code> and <code>RE*</code>) are summed across samples, and all support-related INFO fields (<code>SUPP_*</code>) are averaged across samples. The maximum <code>RF_SCORE</code> value per variant is used as site-level <code>RF_SCORE</code> in <code>INFO</code>, and <code>RF_SCORE</code> of each SV call are moved to the per-sample FORMAT field.</p>
+<pre><code class="language-bash">harmonisv sample2pop \
+--manifest manifest_sample2pop.txt \
+--outvcf population.vcf.gz \
+--filter-GT \
+--info-first SVTYPE,SVLEN,END \
+--info-sum &quot;DP*,RE*&quot; \
+--info-avg &quot;SUPP_*&quot; \
+--info-max RF_SCORE \
+--info-to-format RF_SCORE \
+--keep-format GT
+</code></pre>
+<h2 id="arguments">Arguments</h2>
+<h4 id="inputoutput-arguments">Input/Output arguments:</h4>
+<dl>
+<dt>--manifest FILE</dt>
+<dd>tab-delimited manifest file with columns: <code>file</code> (path to per-sample VCF), <code>sample</code> (sample name). Sample names must be unique.</dd>
+<dt>-o, --outvcf FILE</dt>
+<dd>output VCF/BCF file. Supports <code>.vcf</code>, <code>.vcf.gz</code> (bgzip-compressed), and <code>.bcf</code> extensions.</dd>
+</dl>
+<h4 id="merge-rule-arguments-all-accept-wildcards">Merge rule arguments (all accept wildcards <code>*</code>):</h4>
+<dl>
+<dt>--info-first TAGS</dt>
+<dd>comma-separated INFO fields merged by taking the first non-missing value</dd>
+<dt>--info-sum TAGS</dt>
+<dd>comma-separated INFO fields merged by summing across samples</dd>
+<dt>--info-avg TAGS</dt>
+<dd>comma-separated INFO fields merged by averaging across samples</dd>
+<dt>--info-min TAGS</dt>
+<dd>comma-separated INFO fields merged by taking the minimum across samples</dd>
+<dt>--info-max TAGS</dt>
+<dd>comma-separated INFO fields merged by taking the maximum across samples</dd>
+<dt>--info-concat TAGS</dt>
+<dd>comma-separated INFO fields merged by concatenating non-missing values (comma-separated)</dd>
+</dl>
+<h4 id="format-arguments">FORMAT arguments:</h4>
+<dl>
+<dt>--keep-format TAGS</dt>
+<dd>comma-separated FORMAT fields to preserve in the output (default: <code>GT</code>). Accepts wildcards.</dd>
+<dt>--info-to-format TAGS</dt>
+<dd>comma-separated INFO fields to move to per-sample FORMAT. Each tag is removed from merged INFO and written per sample.</dd>
+<dt>--filter-GT</dt>
+<dd>set genotype to <code>./.</code> if the per-sample FILTER is not missing and not <code>PASS</code>. The original FILTER value is recorded in <code>FORMAT/FT_SAMPLE</code>.</dd>
+</dl>
+<h4 id="other-arguments">Other arguments:</h4>
+<dl>
+<dt>-r, --region STR</dt>
+<dd>genomic region to process, in bcftools format (e.g., <code>chr1</code> or <code>chr1:1000-2000</code>). Requires indexed VCFs.</dd>
+</dl>
               
             </div>
           </div><footer>

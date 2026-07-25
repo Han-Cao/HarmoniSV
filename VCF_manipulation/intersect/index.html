@@ -48,10 +48,6 @@
                 </li>
               </ul>
               <ul>
-                <li class="toctree-l1"><a class="reference internal" href="../../quick_start/">Quick start</a>
-                </li>
-              </ul>
-              <ul>
                 <li class="toctree-l1"><a class="reference internal" href="../../tutorial/">Tutorial</a>
                 </li>
               </ul>
@@ -73,6 +69,26 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">intersect</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#input-requirements">Input requirements</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#output">Output</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#overlap-modes">Overlap modes</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#1-binary-annotation-of-a-single-feature">1. Binary annotation of a single feature</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#2-amount-annotation-with-a-minimum-overlap-threshold">2. Amount annotation with a minimum overlap threshold</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#3-multiple-features-with-different-modes">3. Multiple features with different modes</a>
+    </li>
+        </ul>
+    </li>
     </ul>
                   </li>
               </ul>
@@ -113,9 +129,110 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="intersect"><em>intersect</em></h1>
-<p>Intersect SVs with genomic features</p>
-<p><strong><em>Last updated: 2025-03-14</em></strong></p>
-<p>Documentation in progress</p>
+<p>Intersect structural variants with genomic features</p>
+<p><strong><em>Last updated: 2026-07-25</em></strong></p>
+<h2 id="overview">Overview</h2>
+<p>The <code>intersect</code> command annotates structural variants with overlap information against user-provided genomic feature BED files. For each SV, the tool computes either a binary flag or the number of overlapping base pairs. Results can be written as annotated VCF or as a tab-separated TSV file.</p>
+<h2 id="input-requirements">Input requirements</h2>
+<ul>
+<li>
+<p><strong>VCF</strong>:</p>
+<ul>
+<li><strong>Format</strong>: bi-allelic VCF/BCF following the VCF specification.</li>
+<li><strong>INFO</strong>: <code>SVTYPE</code> and <code>SVLEN</code> are required. For insertions (<code>SVTYPE=INS</code>), the SV is treated as a single base-pair interval at the start position.</li>
+<li><strong>ID</strong>: unique within the VCF.</li>
+</ul>
+</li>
+<li>
+<p><strong>Feature BED files</strong>:</p>
+<ul>
+<li><strong>Format</strong>: standard 3-column BED (CHR, START, END). 0-based half-open coordinates.</li>
+<li>Multiple features can be specified as a comma-separated list to <code>--bed</code>.</li>
+</ul>
+</li>
+</ul>
+<h2 id="output">Output</h2>
+<ul>
+<li>
+<p><strong>VCF output</strong> (<code>--out-type vcf</code>, default): a copy of the input VCF with one additional INFO field per feature. For binary mode, the value is 0 (no overlap) or 1 (overlap). For amount mode, the value is the number of overlapping base pairs.</p>
+</li>
+<li>
+<p><strong>TSV output</strong> (<code>--out-type tsv</code>): a tab-separated file with columns <code>ID</code>, <code>CHR</code>, <code>POS</code>, <code>SVTYPE</code>, <code>SVLEN</code>, and feature overlap values.</p>
+</li>
+</ul>
+<h2 id="overlap-modes">Overlap modes</h2>
+<p>Each feature is configured independently via the <code>--mode</code> and <code>--overlap</code> options:</p>
+<ul>
+<li>
+<p><strong>Binary mode</strong> (<code>b</code>, default): reports 1 if the SV overlaps the feature by at least <code>--overlap</code> base pairs, 0 otherwise.</p>
+</li>
+<li>
+<p><strong>Amount mode</strong> (<code>a</code>): reports the number of overlapping base pairs. Only overlaps meeting the <code>--overlap</code> threshold are reported; others are set to 0.</p>
+</li>
+<li>
+<p><strong>Overlap threshold</strong>: the <code>--overlap</code> value specifies the minimum required overlap in base pairs. A value of <code>-1</code> requires the SV to be fully contained within the feature (i.e., overlap equals SV length).</p>
+</li>
+</ul>
+<h2 id="usage">Usage</h2>
+<pre><code class="language-bash">harmonisv intersect [options] -i &lt;input_vcf&gt; --bed &lt;feature.bed&gt; --name &lt;feature_name&gt; -o &lt;output&gt;
+</code></pre>
+<h2 id="examples">Examples</h2>
+<h5 id="1-binary-annotation-of-a-single-feature">1. Binary annotation of a single feature</h5>
+<p>Flag each SV that overlaps a segmental duplication with at least 1 bp:</p>
+<pre><code class="language-bash">harmonisv intersect \
+  -i sv_calls.vcf.gz \
+  --bed segdup.bed \
+  --name SEGDUP \
+  -o sv_calls.segdup.vcf.gz
+</code></pre>
+<p>The output VCF will contain <code>INFO/SEGDUP=1</code> for SVs overlapping a segmental duplication, and <code>0</code> otherwise.</p>
+<h5 id="2-amount-annotation-with-a-minimum-overlap-threshold">2. Amount annotation with a minimum overlap threshold</h5>
+<p>Compute the number of base pairs each SV overlaps with a repetitive element, requiring at least 50 bp of overlap:</p>
+<pre><code class="language-bash">harmonisv intersect \
+  -i sv_calls.vcf.gz \
+  --bed repeats.bed \
+  --name REPEAT_OVERLAP \
+  --mode a \
+  --overlap 50 \
+  -o sv_calls.repeats.vcf.gz
+</code></pre>
+<p>The output VCF will contain <code>INFO/REPEAT_OVERLAP</code> with the overlap amount in base pairs.</p>
+<h5 id="3-multiple-features-with-different-modes">3. Multiple features with different modes</h5>
+<p>Annotate SVs with three features simultaneously — two binary and one amount-based:</p>
+<pre><code class="language-bash">harmonisv intersect \
+  -i sv_calls.vcf.gz \
+  --bed exons.bed,repeats.bed,centromeres.bed \
+  --name EXON,REPEAT,CENTROMERE \
+  --mode b,a,b \
+  --overlap 1,50,-1 \
+  -o sv_calls.annotated.vcf.gz
+</code></pre>
+<ul>
+<li><code>EXON</code>: binary, ≥1 bp overlap</li>
+<li><code>REPEAT</code>: amount, ≥50 bp overlap</li>
+<li><code>CENTROMERE</code>: binary, full overlap</li>
+</ul>
+<h1 id="arguments">Arguments</h1>
+<h4 id="inputoutput-arguments">Input/Output arguments:</h4>
+<dl>
+<dt>-i, --invcf VCF</dt>
+<dd>input VCF/BCF file</dd>
+<dt>--bed FILE</dt>
+<dd>comma-separated list of genomic feature BED files (3 columns: CHR, START, END)</dd>
+<dt>--name NAME</dt>
+<dd>comma-separated list of feature names added to VCF INFO. Must be in the same order as <code>--bed</code>.</dd>
+<dt>-o, --output FILE</dt>
+<dd>output file path. Extension determines format: <code>.vcf</code>, <code>.vcf.gz</code>, <code>.bcf</code>, or any extension with <code>--out-type tsv</code>.</dd>
+<dt>--out-type STR</dt>
+<dd>output file type: <code>vcf</code> (default) or <code>tsv</code>.</dd>
+</dl>
+<h4 id="overlap-arguments">Overlap arguments:</h4>
+<dl>
+<dt>--mode STR</dt>
+<dd>comma-separated list of intersection modes for each feature, in the same order as <code>--bed</code>. <code>b</code> (default): binary flag (0/1). <code>a</code>: amount of overlapping base pairs.</dd>
+<dt>--overlap STR</dt>
+<dd>comma-separated list of minimum required overlap in base pairs for each feature, in the same order as <code>--bed</code>. <code>1</code> (default): at least 1 bp overlap. <code>-1</code>: SV must be fully contained within the feature. Values ≥1 specify the minimum overlap.</dd>
+</dl>
               
             </div>
           </div><footer>

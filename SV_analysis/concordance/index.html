@@ -48,10 +48,6 @@
                 </li>
               </ul>
               <ul>
-                <li class="toctree-l1"><a class="reference internal" href="../../quick_start/">Quick start</a>
-                </li>
-              </ul>
-              <ul>
                 <li class="toctree-l1"><a class="reference internal" href="../../tutorial/">Tutorial</a>
                 </li>
               </ul>
@@ -84,6 +80,32 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">concordance</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#input-requirements">Input requirements</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#output">Output</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#1-basic-genotype-concordance-between-a-test-callset-and-a-truth-set">1. Basic genotype concordance between a test callset and a truth set</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#2-concordance-with-sample-name-mapping-and-variant-id-matching">2. Concordance with sample name mapping and variant ID matching</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#arguments">Arguments</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#inputoutput-arguments">Input/Output arguments:</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#comparison-arguments">Comparison arguments:</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#other-arguments">Other arguments:</a>
+    </li>
+        </ul>
+    </li>
     </ul>
                   </li>
               </ul>
@@ -114,8 +136,100 @@
               
                 <h1 id="concordance"><em>concordance</em></h1>
 <p>Calculate genotype concordance between two VCFs</p>
-<p><strong><em>Last updated: 2025-03-14</em></strong></p>
-<p>Documentation in progress</p>
+<p><strong><em>Last updated: 2026-07-25</em></strong></p>
+<h2 id="overview">Overview</h2>
+<p>The <code>concordance</code> command compares genotype calls between two VCF files (<code>--invcf</code> and <code>--refvcf</code>) and computes per-variant concordance metrics. For each variant in the input VCF, a matching variant is located in the reference VCF by genomic position and either alleles or variant ID. This is useful to benchmark short-read SV genotyping against long-read SV calls using the same samples.</p>
+<h2 id="input-requirements">Input requirements</h2>
+<ul>
+<li>
+<p><strong>Input VCF</strong> (<code>--invcf</code>):</p>
+<ul>
+<li><strong>Format</strong>: bi-allelic, multi-sample VCF/BCF following the VCF specification.</li>
+<li><strong>ID</strong>: unique within the VCF. Used for matching if <code>--compare id</code> is specified.</li>
+<li><strong>GT</strong>: genotype field required for all samples to be compared.</li>
+</ul>
+</li>
+<li>
+<p><strong>Reference VCF</strong> (<code>--refvcf</code>):</p>
+<ul>
+<li><strong>Format</strong>: bi-allelic, multi-sample VCF/BCF following the VCF specification. Must be sorted by position.</li>
+<li><strong>GT</strong>: genotype field required for all samples to be compared.</li>
+</ul>
+</li>
+<li>
+<p><strong>Sample map</strong> (<code>--map</code>, optional):</p>
+<ul>
+<li><strong>Format</strong>: tab-separated file without header.</li>
+<li><strong>Columns</strong>: <code>input_sample</code>, <code>reference_sample</code>.</li>
+<li>If not provided, samples with matching names in both VCFs are compared.</li>
+</ul>
+</li>
+</ul>
+<h2 id="output">Output</h2>
+<ul>
+<li><strong>Output VCF</strong>: <code>--outvcf</code><ul>
+<li>A copy of the input VCF with three additional INFO fields:<ul>
+<li><code>CON_GT</code>: proportion of compared samples with identical genotypes (0/0, 0/1, 1/1).</li>
+<li><code>CON_EXIST</code>: proportion of compared samples where the variant is present or absent in both VCFs.</li>
+<li><code>CON_WEIGHTED</code>: weighted genotype concordance — the average of concordance rates computed separately for each genotype class (homozygous reference, heterozygous, homozygous alternate). See <a href="https://www.nature.com/articles/s41588-022-01043-w">PanGenie</a> paper for details on weighted concordance.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="usage">Usage</h2>
+<pre><code class="language-bash">harmonisv concordance [options] -i &lt;input_vcf&gt; -r &lt;reference_vcf&gt; -o &lt;output_vcf&gt;
+</code></pre>
+<h2 id="examples">Examples</h2>
+<h5 id="1-basic-genotype-concordance-between-a-test-callset-and-a-truth-set">1. Basic genotype concordance between a test callset and a truth set</h5>
+<p>Samples with identical names in both VCFs are compared. Variants are matched by position and alleles. Only variants with <code>FILTER == PASS</code> in the reference VCF are considered.</p>
+<pre><code class="language-bash">harmonisv concordance \
+  -i test.vcf.gz \
+  -r truth.vcf.gz \
+  -o concordance.vcf.gz \
+  --pass-only
+</code></pre>
+<h5 id="2-concordance-with-sample-name-mapping-and-variant-id-matching">2. Concordance with sample name mapping and variant ID matching</h5>
+<p>When sample names differ between VCFs, use <code>--map</code> to specify the correspondence. Use <code>--compare id</code> if variant IDs are consistent but alleles may differ.</p>
+<pre><code class="language-bash">harmonisv concordance \
+  -i test.vcf.gz \
+  -r truth.vcf.gz \
+  -o concordance.vcf.gz \
+  --map sample_map.txt \
+  --compare id
+</code></pre>
+<pre><code>HG002_test    HG002
+HG003_test    HG003
+HG004_test    HG004
+</code></pre>
+<h2 id="arguments">Arguments</h2>
+<h4 id="inputoutput-arguments">Input/Output arguments:</h4>
+<dl>
+<dt>-i, --invcf VCF</dt>
+<dd>input VCF/BCF file (the callset to evaluate)</dd>
+<dt>-r, --refvcf VCF</dt>
+<dd>reference VCF/BCF file (the truth set to compare against)</dd>
+<dt>-o, --outvcf VCF</dt>
+<dd>output VCF/BCF file. A copy of <code>--invcf</code> with <code>CON_GT</code>, <code>CON_EXIST</code>, and <code>CON_WEIGHTED</code> added to INFO.</dd>
+</dl>
+<h4 id="comparison-arguments">Comparison arguments:</h4>
+<dl>
+<dt>--compare STR</dt>
+<dd>method to match variants between the two VCFs. <code>alleles</code> (default): match by position and REF/ALT alleles. <code>id</code>: match by position and variant ID.</dd>
+<dt>--map FILE</dt>
+<dd>tab-separated file mapping input VCF sample names (column 1) to reference VCF sample names (column 2). If not provided, samples with identical names in both VCFs are compared.</dd>
+<dt>--region STR</dt>
+<dd>genomic region to compare, in bcftools format (e.g., <code>chr1</code> or <code>chr1:1000-2000</code>). Requires indexed VCFs.</dd>
+<dt>--include-missing</dt>
+<dd>include samples where the input VCF genotype is missing (<code>./.</code>) in the comparison. By default, only samples with non-missing genotypes in both VCFs are compared.</dd>
+<dt>--pass-only</dt>
+<dd>only consider variants with <code>FILTER == PASS</code> in the reference VCF. Variants at matching positions that do not pass filters are ignored.</dd>
+</dl>
+<h4 id="other-arguments">Other arguments:</h4>
+<dl>
+<dt>-h, --help</dt>
+<dd>show help message and exit</dd>
+</dl>
               
             </div>
           </div><footer>

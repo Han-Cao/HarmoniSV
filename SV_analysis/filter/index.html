@@ -48,10 +48,6 @@
                 </li>
               </ul>
               <ul>
-                <li class="toctree-l1"><a class="reference internal" href="../../quick_start/">Quick start</a>
-                </li>
-              </ul>
-              <ul>
                 <li class="toctree-l1"><a class="reference internal" href="../../tutorial/">Tutorial</a>
                 </li>
               </ul>
@@ -82,6 +78,30 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">filter</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#input-requirements">Input requirements</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#output">Output</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#training-workflow">Training workflow</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#suggestions-on-training-and-benchmark-sites">Suggestions on training and benchmark sites</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#arguments">Arguments</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#inputoutput-arguments">Input/Output arguments:</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#training-arguments">Training arguments:</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#model-arguments">Model arguments:</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#other-arguments">Other arguments:</a>
+    </li>
+        </ul>
+    </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../concordance/">concordance</a>
@@ -113,9 +133,187 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="filter"><em>filter</em></h1>
-<p>Random forest filter for SVs</p>
-<p><strong><em>Last updated: 2025-03-14</em></strong></p>
-<p>Documentation in progress</p>
+<p>Random forest filter for structural variants</p>
+<p><strong><em>Last updated: 2026-07-24</em></strong></p>
+<h2 id="overview">Overview</h2>
+<p>The <code>filter</code> command trains a random forest classifier on user-provided positive and negative SV sites, then applies the model to assign a confidence score (<code>RF_SCORE</code>) to each SV call in per-sample VCFs. Multi-sample input is handled via a manifest file.</p>
+<h2 id="input-requirements">Input requirements</h2>
+<ul>
+<li>
+<p><strong>Manifest</strong>:</p>
+<ul>
+<li><strong>Format</strong>: tab-separated file with header.</li>
+<li><strong>Columns</strong>:<ul>
+<li><code>file</code>: path to per-sample VCF/BCF file</li>
+<li><code>sample</code>: sample name</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Per-sample VCF</strong>:</p>
+<ul>
+<li><strong>Format</strong>: bi-allelic VCF/BCF files following the VCF specification</li>
+<li><strong>INFO</strong>: <code>SVTYPE</code>, <code>AC</code>, <code>SUPP_CALLER</code>, <code>SUPP_METHOD</code>, <code>MAX_RE</code>and all feature INFO tags specified by <code>--feature</code>.</li>
+<li><strong>ID</strong>: unique within each per-sample VCF. Training-site matching is performed on this ID directly.</li>
+</ul>
+</li>
+<li>
+<p><strong>Training sites</strong> (<code>--train-sites</code>):</p>
+<ul>
+<li><strong>Format</strong>: tab-separated file without header.</li>
+<li><strong>Columns</strong>: <code>ID</code>, <code>label</code> (1 = true positive, 0 = true negative)</li>
+</ul>
+</li>
+<li>
+<p><strong>Benchmark sites</strong> (<code>--bench-sites</code>, optional):</p>
+<ul>
+<li><strong>Format</strong>: same as training sites.</li>
+<li>Used for independent evaluation only; bench SV IDs are excluded from training.</li>
+</ul>
+</li>
+</ul>
+<h2 id="output">Output</h2>
+<ul>
+<li>
+<p><strong>Per-sample VCF</strong>: <code>{output}.{SVTYPE}.{sample}.vcf.gz</code></p>
+<ul>
+<li><strong>INFO</strong>: <code>RF_SCORE</code> — random forest probability score (0–1) for the target <code>SVTYPE</code>. Non-target variants are written unchanged without the score.</li>
+<li><strong>ID</strong>: same as the input VCF.</li>
+</ul>
+</li>
+<li>
+<p><strong>Model file</strong>: <code>{output}.{SVTYPE}.model</code> — pickled <code>RandomForestClassifier</code>.</p>
+</li>
+<li>
+<p><strong>Training statistics</strong>:</p>
+<ul>
+<li><code>{output}.cv_summary.txt</code> — cross-validation results from hyperparameter search.</li>
+<li><code>{output}.test.score_distribution.pdf</code> — score density plot on the held-out test set.</li>
+<li><code>{output}.test.cutoff_summary.txt</code> — performance at various score cutoffs.</li>
+</ul>
+</li>
+<li>
+<p><strong>Benchmark statistics</strong> (if <code>--bench-sites</code> provided):</p>
+<ul>
+<li><code>{output}.bench.score_distribution.pdf</code></li>
+<li><code>{output}.bench.cutoff_summary.txt</code></li>
+</ul>
+</li>
+</ul>
+<h2 id="training-workflow">Training workflow</h2>
+<p>The <code>filter</code> command performs the following steps:</p>
+<ol>
+<li>
+<p><strong>Data loading</strong>: All per-sample VCFs listed in the manifest are loaded into a single dataframe. Only variants matching <code>--sv-type</code> and with <code>AC &gt; 0</code> are retained.</p>
+</li>
+<li>
+<p><strong>Site-level labeling</strong>: Each SV call is labeled as positive (1) or negative (0) if its ID appears in <code>--train-sites</code>. Unlabeled calls are assigned -9 and excluded from training.</p>
+</li>
+<li>
+<p><strong>Call-level confidence filtering</strong> (optional):</p>
+<ul>
+<li><code>--min-re</code>: SV calls at positive sites with <code>MAX_RE</code> below this threshold are excluded from training (likely false positive SV calls).</li>
+<li><code>--min-support-caller</code> / <code>--min-support-method</code>: SV calls at negative sites with <code>SUPP_CALLER</code> or <code>SUPP_METHOD</code> at or above this threshold are excluded from training (likely false negative SV calls).</li>
+</ul>
+</li>
+<li>
+<p><strong>Balanced train/test split</strong>: Positive and negative training examples are balanced via downsampling to the minority class size, then split according to <code>--train-size</code>.</p>
+</li>
+<li>
+<p><strong>Model training</strong>: A random forest classifier is trained with hyperparameter tuning via randomized search cross-validation (<code>--k-fold</code> folds, <code>--n-iter</code> iterations).</p>
+</li>
+<li>
+<p><strong>Per-sample application</strong>: The trained model predicts <code>RF_SCORE</code> for each SV call, and annotated VCFs are written per sample.</p>
+</li>
+<li>
+<p><strong>Benchmark evaluation</strong> (optional): If <code>--bench-sites</code> provided, the model is evaluated on the benchmark sites after per-sample VCFs are written. If <code>--bench-sample</code> is specified, only those samples are used for benchmark evaluation, otherwise all samples are used.</p>
+</li>
+</ol>
+<h2 id="suggestions-on-training-and-benchmark-sites">Suggestions on training and benchmark sites</h2>
+<ul>
+<li><strong>Training sites</strong>: training sites can be generated by comparing the representative SVs to multiple high-quality SV dataset (e.g., HGSVC, 1000 Genomes, GIAB, gnomAD-SV). Sites that are present in multiple SV dataset can be labeled as positive, while novel sites that are not present in any SV dataset can be labeled as negative. The <code>--min-re</code> and <code>--min-support-caller</code> / <code>--min-support-method</code> options ensure that only high-confidence positive and negative SV calls are used for training.</li>
+<li><strong>Benchmark sites</strong>: it is recommended to include a few benchmark samples (e.g., HG002, HPRC samples) with ground truth SVs as benchmark sites. If both <code>--train-sites</code> and <code>--bench-sites</code> are provided in the same run, the benchmark sites will be excluded from training to ensure independent evaluation of the model. If training and benchmark are performed in separate runs, the benchmark sites should be manually excluded from the training sites.</li>
+</ul>
+<h2 id="usage">Usage</h2>
+<pre><code class="language-bash"># Model training
+harmonisv filter \
+  --manifest manifest.txt \
+  --output output_prefix \
+  --sv-type INS \
+  --feature &quot;SVLEN,MEAN_VAF,STD_VAF,DP_MINIMAP2_CUTESV,VAF_MINIMAP2_CUTESV&quot; \
+  --train-sites train_sites.txt \
+  --min-re 5 \
+  --min-support-method 3
+
+# Apply a pre-trained model on benchmark sample
+harmonisv filter \
+  --manifest manifest.txt \
+  --output output_prefix \
+  --sv-type INS \
+  --feature &quot;SVLEN,MEAN_VAF,STD_VAF,DP_MINIMAP2_CUTESV,VAF_MINIMAP2_CUTESV&quot; \
+  --apply-model pretrained.model \
+  --bench-sites bench_sites.txt \
+  --bench-sample HG002
+
+</code></pre>
+<h2 id="arguments">Arguments</h2>
+<h4 id="inputoutput-arguments">Input/Output arguments:</h4>
+<dl>
+<dt>--manifest FILE</dt>
+<dd>tab-delimited manifest file with columns: <code>file</code> (path to per-sample VCF), <code>sample</code> (sample name)</dd>
+<dt>-o, --output PREFIX</dt>
+<dd>output prefix for all output files</dd>
+<dt>--sv-type TYPE</dt>
+<dd>SVTYPE to work on (e.g., INS, DEL, DUP, INV)</dd>
+<dt>--feature TAGS</dt>
+<dd>comma-separated list of INFO tags used as training features (e.g., <code>SVLEN,MAX_RE,SUPP_CALLER</code>)</dd>
+</dl>
+<h4 id="training-arguments">Training arguments:</h4>
+<dl>
+<dt>--train-sites FILE</dt>
+<dd>tab-separated file of training SV sites (without header). Columns: <code>SV_ID</code>, <code>label</code> (1 = positive, 0 = negative). Required unless <code>--apply-model</code> is used.</dd>
+<dt>--train-size FLOAT</dt>
+<dd>proportion of SVs used for training; the remainder is held out as a test set (default: 0.9)</dd>
+<dt>--max-train N</dt>
+<dd>maximum number of SVs used for training (default: no limit)</dd>
+<dt>--min-re N</dt>
+<dd>call-level filter: positive-labeled calls with <code>MAX_RE</code> below this value are excluded from training (default: None)</dd>
+<dt>--min-support-caller N</dt>
+<dd>call-level filter: negative-labeled calls with <code>SUPP_CALLER</code> at or above this value are excluded from training, as they are too high-confidence to be true negatives (default: None)</dd>
+<dt>--min-support-method N</dt>
+<dd>same as <code>--min-support-caller</code> but using <code>SUPP_METHOD</code>; overrides <code>--min-support-caller</code> if both are specified (default: None)</dd>
+<dt>--bench-sites FILE</dt>
+<dd>tab-separated file of benchmark SV sites for independent evaluation. Bench SV IDs are excluded from training and evaluated separately after per-sample VCFs are written.</dd>
+<dt>--bench-sample SAMPLE</dt>
+<dd>comma-separated list of sample names to use for benchmark evaluation (default: all samples)</dd>
+</dl>
+<h4 id="model-arguments">Model arguments:</h4>
+<dl>
+<dt>--n-estimator N</dt>
+<dd>number of trees in the random forest (default: 300)</dd>
+<dt>--k-fold N</dt>
+<dd>number of folds for randomized search cross-validation (default: 10)</dd>
+<dt>--n-iter N</dt>
+<dd>number of parameter settings sampled in randomized search (default: 100)</dd>
+<dt>--max-features STR</dt>
+<dd>hyperparameter search range for <code>max_features</code>. Format: single value, comma-separated list, or <code>from:to:step</code> (default: auto — 1/2 √n_features to 2/3 n_features)</dd>
+<dt>--max-depth STR</dt>
+<dd>hyperparameter search range for <code>max_depth</code>. Format: same as <code>--max-features</code> (default: <code>7:14:1</code>)</dd>
+<dt>--min-samples-leaf STR</dt>
+<dd>hyperparameter search range for <code>min_samples_leaf</code>. Format: same as <code>--max-features</code> (default: <code>1,2,5,10,20,50</code>)</dd>
+<dt>--apply-model FILE</dt>
+<dd>skip training and apply a pre-trained model (pickled <code>RandomForestClassifier</code>). <code>--train-sites</code> is not required when this option is used.</dd>
+<dt>--model-thread N</dt>
+<dd>number of threads for <code>RandomForestClassifier</code> (default: 4)</dd>
+<dt>--cv-thread N</dt>
+<dd>number of threads for cross-validation (default: 4). Total cores used = <code>--model-thread</code> × <code>--cv-thread</code>.</dd>
+</dl>
+<h4 id="other-arguments">Other arguments:</h4>
+<dl>
+<dt>--seed N</dt>
+<dd>random seed for reproducibility (default: 42)</dd>
+</dl>
               
             </div>
           </div><footer>
