@@ -2,24 +2,71 @@
 
 A toolkit to harmonize and filter structural variations across methods and samples.
 
-***Last updated: 2025-03-14***
+***Last updated: 2026-07-25***
 
 ## Features
 - Harmonize SVs discovered by different SV calling methods
 - Filter high-confidence SVs with a random forest classifier
-- Fast VCF manipulation, annotation, and conversion
+- Fast VCF manipulation, annotation, and conversion for SVs
 
-## Important
-The documentation for below commands are ready now:
 
-- [harmonize-header]
-- [harmonize]
-- [represent]
-- [genotype]
+## Installation
 
-The above commands can be used to genotype one sample with multiple SV calling methods, see [tutorial] for more details.
+Clone the repository:
+``` bash
+git clone https://github.com/Han-Cao/HarmoniSV.git
+```
 
-For other commands, please type `harmonisv <command> -h` to get help. I am simplifying the input format and command line options for other commands. The documentation will be updated after that.
+Make sure you have Python 3.8+ and pip installed. Then, install the tool and its dependencies:
+``` bash
+pip install .
+```
+
+## Quick start
+``` bash
+harmonisv
+
+HarmoniSV: A toolkit to harmonize and filter structural variantions across methods and samples
+Version: 0.1.0
+
+Usage: harmonisv <command> [options]
+
+Commands:
+
+ -- VCF manipulation
+    harmonize          Harmonize SV VCFs across samples and SV calling methods
+    harmonize-header   Harmonize VCF headers
+    sample2pop         Convert single-sample VCF to multi-sample VCF
+    intersect          Intersect SVs with genomic features
+
+ -- Analysis on SV callset
+    represent          Select the representative SV from merged SVs
+    genotype           Genotype SVs across SV genotyping methods
+    filter             Random forest filter for SVs
+    concordance        Calculate genotype concordance between two VCFs
+
+
+Note:
+    1. All input VCFs MUST follow the VCF specification
+    2. Some commands assume unique SV IDs to index SVs
+    3. The input/output VCF format (i.e., vcf, vcf.gz, bcf) will be automatically detected. However, a 
+       temporary uncompressed VCF file will be generated if the output is vcf.gz or bcf
+              
+
+For help on a specific command, run:
+    harmonisv <command> -h
+
+```
+
+## Table of contents
+- [Tutorial](tutorial.md)
+- [Command list](command_list.md)
+- [VCF format](vcf_format.md)
+
+## License
+
+[MIT License](LICENSE)
+
 
 ----
 [harmonize]: VCF_manipulation/harmonize.md
@@ -32,3 +79,5 @@ For other commands, please type `harmonisv <command> -h` to get help. I am simpl
 [concordance]: SV_analysis/concordance.md
 
 [tutorial]: tutorial.md
+[command_list]: command_list.md
+[vcf_format]: vcf_format.md

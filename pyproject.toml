@@ -21,12 +21,6 @@ requires-python = ">=3.8"
 
 [project.optional-dependencies]
 dev = [
-    "ruff",
-    "pytest",
-    "pytest-order",
-    "pytest-cov"
-]
-doc = [
     "mkdocs"
 ]
 

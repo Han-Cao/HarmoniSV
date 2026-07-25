@@ -4,7 +4,7 @@
 
 ## Requirements
 - bi-allelic VCF/BCF files following the VCF specification
-- single-sample VCF/BCF files are suggested as input for SV calling workflow. Although multi-sample VCFs may not raise errors (except for `genotype`), they are not fully tested and may cause unexpected results.
+- single-sample VCF/BCF files are suggested as input for SV calling workflow. Although multi-sample VCFs may not raise errors (except for `genotype`), they are not fully tested and can generate unexpected results.
 - The input/output VCF format (i.e., vcf, vcf.gz, bcf) will be automatically detected. However, a 
 temporary uncompressed VCF file will be generated if the output is vcf.gz or bcf
 

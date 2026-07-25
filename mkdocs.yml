@@ -17,7 +17,6 @@ markdown_extensions:
 
 nav:
     - 'Introduction': 'index.md'
-    - 'Quick start': 'quick_start.md'
     - 'Tutorial': 'tutorial.md'
     - 'Command list': 'command_list.md'
     - 'VCF format': 'vcf_format.md'
