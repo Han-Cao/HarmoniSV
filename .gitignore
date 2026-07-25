@@ -2,6 +2,7 @@ __pycache__/
 *backup*
 site/
 test/output/
+plans/
 
 # coverage report
 .coverage
