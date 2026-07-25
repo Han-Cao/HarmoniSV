@@ -39,10 +39,9 @@ Commands:
 
 Note:
     1. All input VCFs MUST follow the VCF specification
-    2. Some commands assume specific variant ID format to index SVs from different methods and samples, 
-       please check the required ID format before you use
+    2. Some commands assume unique SV IDs to index SVs
     3. The input/output VCF format (i.e., vcf, vcf.gz, bcf) will be automatically detected. However, a 
-       temporary uncompressed VCF file will be generated if the output is vcf.gz or bcf.
+       temporary uncompressed VCF file will be generated if the output is vcf.gz or bcf
               
 
 For help on a specific command, run:
