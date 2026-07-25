@@ -1,6 +1,6 @@
 # Tutorial
 
-***Last updated: 2025-03-14***
+***Last updated: 2026-07-24***
 
 This tutorial provides a step-by-step guide on how to utilize `harmonisv` for post-processing the results of various SV calling methods and conducting joint SV calling across multiple samples and methods. The necessary input data and scripts for this tutorial can be found in the [test] folder on GitHub.
 
@@ -18,6 +18,7 @@ In this tutorial, we use the following tools to showcase the usage of `harmonisv
 - [4. SV merging](#4-sv-merging)
 - [5. SV re-genotyping](#5-sv-re-genotyping)
 - [6. Combine per-sample SV genotyping results](#6-combine-per-sample-sv-genotyping-results)
+- [7. Random forest model for SV filtering](#7-random-forest-model-for-sv-filtering)
 
 ## 1. SV discovery using mutliple methods
 
@@ -312,12 +313,12 @@ dir_genotype="output/genotype/"
 
 $harmonisv genotype \
 -i ${dir_represent}/All_method.representative.vcf \
--f manifest.txt \
+-f manifest_genotype.txt \
 -o ${dir_genotype}/HG002.representative.genotyped.vcf \
 --sample HG002
 ```
 
-Particularly, the `manifest.txt` is a tab-separated file with the following columns:
+Particularly, the `manifest_genotype.txt` is a tab-separated file with the following columns:
 
 - `file`: path to SV discovery and force calling VCF/BCF file
 - `sample`: sample ID
@@ -339,6 +340,33 @@ Particularly, the `manifest.txt` is a tab-separated file with the following colu
 | output/harmonize/HG002.minimap2.sniffles.harmonized.vcf             | HG002  | minimap2 | sniffles | 0             |                     |
 | output/harmonize/HG002.minimap2.svim.harmonized.vcf                 | HG002  | minimap2 | svim     | 0             |                     |
 
+## 7. Random forest model for SV filtering
+
+The per-sample VCF may contain false positive SVs. To filter out those false positives, we can use the `filter` command to train a random forest model and apply it to the per-sample VCF. The model will be trained on known positive and negative SV sites in `--train-sites` using all VCFs in the manifest file. If `--bench-sites` is provided, the model will be evaluated on the benchmark sites (excluded from `--train-sites`). See the [filter] section for more details.
+
+```bash
+harmonisv filter \
+--manifest manifest_filter.txt \
+--output ${dir_filter}/model_training \
+--sv-type INS \
+--feature "SVLEN,MEAN_VAF,STD_VAF,DP_MINIMAP2_CUTESV,VAF_MINIMAP2_CUTESV,VAF_MINIMAP2_SVIM,DP_NGMLR_CUTESV,VAF_NGMLR_CUTESV,VAF_NGMLR_SVIM" \
+--train-sites filter/train_sites.txt \
+--bench-sites filter/bench_sites.txt \
+--bench-sample HG002 \
+--train-size 0.8 \
+--n-iter 10 \
+--max-depth 7:9:1 \
+--min-samples-leaf 1,5,10 \
+--seed 42
+
+harmonisv filter \
+--manifest manifest_filter.txt \
+--output ${dir_filter}/filtered_SV \
+--apply-model ${dir_filter}/model_training.INS.model \
+--sv-type INS \
+--feature "SVLEN,MEAN_VAF,STD_VAF,DP_MINIMAP2_CUTESV,VAF_MINIMAP2_CUTESV,VAF_MINIMAP2_SVIM,DP_NGMLR_CUTESV,VAF_NGMLR_CUTESV,VAF_NGMLR_SVIM" \
+--seed 42
+```
 
 
 [test]: https://github.com/Han-Cao/HarmoniSV/tree/master/test
@@ -346,3 +374,5 @@ Particularly, the `manifest.txt` is a tab-separated file with the following colu
 [test/dup_call]: https://github.com/Han-Cao/HarmoniSV/tree/master/test/dup_call
 [test/sv_merge]: https://github.com/Han-Cao/HarmoniSV/tree/master/test/sv_merge
 [test/force_call]: https://github.com/Han-Cao/HarmoniSV/tree/master/test/force_call
+[test/filter]: https://github.com/Han-Cao/HarmoniSV/tree/master/test/filter
+[filter]: SV_analysis/filter.md
