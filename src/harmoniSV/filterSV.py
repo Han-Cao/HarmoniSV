@@ -20,7 +20,7 @@ from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import roc_auc_score, precision_score
 from sklearn.utils import resample
 
-from harmoniSV.utils import read_vcf, parse_cmdargs, read_manifest, manifest_to_df
+from harmoniSV.utils import read_vcf, parse_cmdargs, read_manifest, manifest_to_df, OutVcf
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv filter",
@@ -374,7 +374,7 @@ def apply_vcf(invcf: pysam.VariantFile,
     new_header = invcf.header
     if 'RF_SCORE' not in new_header.info:
         new_header.info.add('RF_SCORE', 1, 'Float', 'Random forest probability score')
-    outvcf = pysam.VariantFile(output, 'w', header=new_header)
+    outvcf = OutVcf(output, new_header)
 
     write_vcf_filter(invcf=invcf,
                      outvcf=outvcf,

@@ -14,7 +14,7 @@ import pandas as pd
 import pyranges as pr
 
 
-from harmoniSV.utils import read_vcf, vcf_to_df, parse_cmdargs
+from harmoniSV.utils import read_vcf, vcf_to_df, parse_cmdargs, OutVcf
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv intersect",
@@ -158,7 +158,7 @@ def intersect_vcf(invcf: pysam.VariantFile, out: str, feature_list: list) -> Non
     
     # write to outvcf
     header = add_feature_header(invcf, feature_list)
-    outvcf = pysam.VariantFile(out, 'w', header=header)
+    outvcf = OutVcf(out, header)
 
     for variant in invcf.fetch():
         new_variant = variant.copy()

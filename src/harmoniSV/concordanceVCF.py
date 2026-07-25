@@ -12,7 +12,7 @@ import logging
 import pysam
 import numpy as np
 
-from harmoniSV.utils import read_vcf, parse_cmdargs
+from harmoniSV.utils import read_vcf, parse_cmdargs, OutVcf
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv concordance",
@@ -223,7 +223,7 @@ def concordanceVCF_main(cmdargs):
     # generate output
     new_header = invcf.header
     new_header = add_header(new_header)
-    outvcf = pysam.VariantFile(args.outvcf, 'w', header=new_header)
+    outvcf = OutVcf(args.outvcf, new_header)
 
     # setup counters
     counter_gt = ConcordanceCounter()
