@@ -10,7 +10,6 @@
 import argparse
 import logging
 import pysam
-import pysam.bcftools
 import pandas as pd
 import pyranges as pr
 
@@ -26,7 +25,7 @@ parser.add_argument("-i", "--invcf", metavar="vcf", type=str, required=True,
 parser.add_argument("-o", "--output", metavar="vcf", type=str, required=True,
                     help="ouput file")
 parser.add_argument("--out-type", metavar="vcf", type=str, required=False, default="vcf",
-                    help="output file type, vcf or bed")
+                    help="output file type, vcf or tsv")
 parser.add_argument("--bed", metavar="bed", type=str, required=True,
                     help="comma-separated genomic feature bed files with 3 columns: CHR, START, END")
 parser.add_argument("--name", metavar="name", type=str, required=True,
@@ -170,9 +169,6 @@ def intersect_vcf(invcf: pysam.VariantFile, out: str, feature_list: list) -> Non
     
     outvcf.close()
     
-    if out.endswith("vcf.gz"):
-        pysam.bcftools.index("-t", out)
-
 
 def intersectSV_main(cmdargs) -> None:
     """Main function"""
@@ -187,7 +183,7 @@ def intersectSV_main(cmdargs) -> None:
     invcf = read_vcf(args.invcf)
     if args.out_type == 'vcf':
         intersect_vcf(invcf, args.output, feature_list)
-    elif args.out_type == 'bed':
+    elif args.out_type == 'tsv':
         df_intersect = intersect_features(invcf, feature_list)
         df_intersect.to_csv(args.output, sep='\t')
     else:
