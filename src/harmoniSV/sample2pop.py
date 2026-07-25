@@ -2,7 +2,7 @@
 
 # Convert single-sample VCF to multi-sample VCF
 #
-# Last update: 24-Jul-2026
+# Last update: 25-Jul-2026
 # Author: Han Cao
 # Contact: hcaoad@connect.ust.hk
 
@@ -15,17 +15,17 @@ import pysam
 import pandas as pd
 import numpy as np
 
-from harmoniSV.utils import read_vcf, parse_info, parse_cmdargs
+from harmoniSV.utils import read_vcf, parse_info, parse_cmdargs, read_manifest
 
 # parse arguments
 parser = argparse.ArgumentParser(prog="harmonisv sample2pop",
                                  description="Convert single-sample VCF to multi-sample VCF",
                                  add_help=False)
 required = parser.add_argument_group('required arguments')
-required.add_argument("-i", "--invcf", metavar="vcf", type=str, required=True,
-                      help="input vcf file")
+required.add_argument("--manifest", metavar="FILE", type=str, required=True,
+                      help="tab-delimited manifest file with columns: file (path to per-sample VCF), sample (sample name)")
 required.add_argument("-o", "--outvcf", metavar="PREFIX", type=str, required=True,
-                      help="ouput vcf file")
+                      help="output vcf file")
 
 
 rule_args = parser.add_argument_group('Rules to convert or merge variants, accept wildcards "*"')
@@ -51,10 +51,6 @@ rule_args.add_argument("--keep-format", metavar="FORMAT", type=str, required=Fal
 optional_arg = parser.add_argument_group('optional arguments')
 optional_arg.add_argument("-r", "--region", metavar="chr[:start-end]", type=str, required=False,
                           help="region string accecpted by bcftools")
-optional_arg.add_argument("-d", "--delimiter", metavar=".", type=str, required=False, default=".",
-                          help="delimiter for between sample ID and unique variant ID (default: .)")
-optional_arg.add_argument("--seed", metavar="N", type=int, required=False, default=42,
-                          help="random seed (default: 42)")
 optional_arg.add_argument("-h", "--help", action='help', help='show this help message and exit')
 
 
@@ -188,7 +184,8 @@ def sample_vcf_to_df(vcf: pysam.VariantFile,
                     format: list, 
                     info_to_format: list, 
                     filter: bool=True, 
-                    region: str=None):
+                    region: str=None,
+                    sample_name: str=None):
     """Convert single-sample vcf to dataframe"""
     rows_info = []
     rows_geno = []
@@ -225,6 +222,7 @@ def sample_vcf_to_df(vcf: pysam.VariantFile,
         # parse genotype
         new_row_geno = {}
         new_row_geno['uniq_id'] = variant.id
+        new_row_geno['Sample'] = sample_name
         
         if format == 'all':
             tag_exist = variant.format.keys()
@@ -409,29 +407,50 @@ def sample2pop_main(cmdargs) -> None:
 
     args = parse_cmdargs(parser, cmdargs)
 
-    # read input
-    invcf = read_vcf(args.invcf)
+    # read manifest
+    df_manifest = read_manifest(args.manifest, header=0)
+
+    # Validate no duplicate sample names in manifest
+    if df_manifest['sample'].duplicated().any():
+        dups = df_manifest['sample'][df_manifest['sample'].duplicated()].unique()
+        logger.error(f"Duplicate sample names in manifest: {', '.join(dups)}")
+        raise SystemExit()
+
+    # read first VCF to extract header for rule parsing
+    first_vcf = read_vcf(df_manifest.iloc[0]['file'])
 
     # extract all info and format tags
-    all_info = invcf.header.info.keys()
-    all_format = invcf.header.formats.keys()
+    all_info = first_vcf.header.info.keys()
+    all_format = first_vcf.header.formats.keys()
 
     # match rules
     merge_rule = parse_all_rules(args, all_info)
 
-    # extract tags to extact
+    # extract tags to extract
     keep_info = [x for x in merge_rule.keys() if x not in VCF_BASIC_FIELDS]
     keep_format = match_field(args.keep_format, all_format)
     keep_info2format = match_field(args.info_to_format, all_info)
 
-    df_info, df_geno = sample_vcf_to_df(vcf=invcf, 
-                                        info=keep_info,
-                                        format=keep_format, 
-                                        info_to_format=keep_info2format, 
-                                        filter=args.filter_GT, 
-                                        region=args.region)
-    
-    # extract still remain tags as some only exist in header
+    # Loop over manifest rows to load each per-sample VCF
+    df_info_list = []
+    df_geno_list = []
+    for i, row in df_manifest.iterrows():
+        vcf = read_vcf(row['file'])
+        df_i, df_g = sample_vcf_to_df(vcf=vcf,
+                                      info=keep_info,
+                                      format=keep_format,
+                                      info_to_format=keep_info2format,
+                                      filter=args.filter_GT,
+                                      region=args.region,
+                                      sample_name=row['sample'])
+        df_info_list.append(df_i)
+        df_geno_list.append(df_g)
+        vcf.close()
+
+    df_info = pd.concat(df_info_list, ignore_index=True)
+    df_geno = pd.concat(df_geno_list, ignore_index=True)
+
+    # extract still remaining tags as some only exist in header
     keep_info = [x for x in keep_info if x in df_info.columns]
     keep_format = [x for x in keep_format if x in df_geno.columns]
     keep_info2format = [x for x in keep_info2format if x in df_geno.columns]
@@ -442,12 +461,13 @@ def sample2pop_main(cmdargs) -> None:
 
     merge_rule = {k: merge_rule[k] for k in merge_rule.keys() if k in df_info.columns}
     keep_format = keep_format + ['FT_SAMPLE'] + keep_info2format
-    
-    # extract sample and SV ID
-    df_info['ID'] = df_info['uniq_id'].str.split('.', n=1, expand=True)[1]
-    df_geno[['Sample', 'ID']] = df_geno['uniq_id'].str.split('.', n=1, expand=True)
-    sample_list = df_geno['Sample'].unique().tolist()
-    sample_list.sort()
+
+    # Set ID from variant ID (no sample prefix to strip in per-sample VCFs)
+    df_info['ID'] = df_info['uniq_id']
+    df_geno['ID'] = df_geno['uniq_id']
+
+    # Build sample list from manifest (preserving order)
+    sample_list = df_manifest['sample'].tolist()
 
     # merge vcf
     logger.info('Start merging vcf...')
@@ -460,7 +480,7 @@ def sample2pop_main(cmdargs) -> None:
     logger.info('Merging vcf done.')
     
     # generate new header
-    new_header = generate_merge_header(header=invcf.header,
+    new_header = generate_merge_header(header=first_vcf.header,
                                        merge_rule=merge_rule,
                                        info_to_format=keep_info2format)
     logger.info('Generate new header')
@@ -472,7 +492,7 @@ def sample2pop_main(cmdargs) -> None:
         outfile = outfile[:-3]
         bgz_flag = True
     
-    logger.info(f'Writing output to {outfile}')
+    logger.info(f'Writing temporary VCF to {outfile}')
     with open(outfile, 'w') as f:
         for line in new_header:
             f.write(line)
@@ -483,7 +503,7 @@ def sample2pop_main(cmdargs) -> None:
         pysam.tabix_compress(outfile, outfile + '.gz', force=True)
         os.remove(outfile)
 
-    return None
+    first_vcf.close()
 
 
 

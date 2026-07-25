@@ -1,0 +1,3 @@
+file	sample
+output/filter/model_training.INS.HG002.vcf.gz	HG002_train
+output/filter/filtered_SV.INS.HG002.vcf.gz	HG002_apply

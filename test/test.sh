@@ -211,3 +211,20 @@ harmonisv filter \
 --sv-type INS \
 --feature "SVLEN,MEAN_VAF,STD_VAF,DP_MINIMAP2_CUTESV,VAF_MINIMAP2_CUTESV,VAF_MINIMAP2_SVIM,DP_NGMLR_CUTESV,VAF_NGMLR_CUTESV,VAF_NGMLR_SVIM" \
 --seed 42
+
+
+echo "################## 8. Convert to population VCF ##################"
+dir_pop="output/population/"
+[[ ! -d $dir_pop ]] && mkdir -p $dir_pop
+
+harmonisv sample2pop \
+--manifest manifest_sample2pop.txt \
+--outvcf ${dir_pop}/population.vcf.gz \
+--filter-GT \
+--info-first SVTYPE,SVLEN,END \
+--info-sum "DP*,RE*" \
+--info-avg "SUPP_*" \
+--info-min MAX_RE \
+--info-max RF_SCORE \
+--info-to-format RF_SCORE \
+--keep-format GT
