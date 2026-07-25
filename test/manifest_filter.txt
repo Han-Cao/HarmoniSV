@@ -1,2 +1,2 @@
 file	sample
-/mnt/d/Han/Code/HarmoniSV/test/genotype/HG002.representative.genotyped.vcf.gz	HG002
+output/genotype/HG002.representative.genotyped.vcf	HG002
