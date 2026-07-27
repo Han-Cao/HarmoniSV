@@ -65,7 +65,7 @@ For help on a specific command, run:
 
 ## License
 
-[MIT License](LICENSE)
+[MIT License](https://github.com/Han-Cao/HarmoniSV/blob/master/LICENSE)
 
 
 ----

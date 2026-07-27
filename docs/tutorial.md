@@ -12,7 +12,7 @@ In this tutorial, we use the following tools to showcase the usage of `harmonisv
 
 ## Table of Contents
 
-- [1. SV discovery using multiple methods](#1-sv-discovery-using-mutliple-methods)
+- [1. SV discovery using multiple methods](#1-sv-discovery-using-multiple-methods)
 - [2. Harmonize VCFs](#2-harmonize-vcfs)
 - [3. Remove duplicated SVs](#3-remove-duplicated-svs)
 - [4. SV merging](#4-sv-merging)
@@ -20,7 +20,7 @@ In this tutorial, we use the following tools to showcase the usage of `harmonisv
 - [6. Combine per-sample SV genotyping results](#6-combine-per-sample-sv-genotyping-results)
 - [7. Random forest model for SV filtering](#7-random-forest-model-for-sv-filtering)
 - [8. Merge per-sample VCFs into a population VCF](#8-merge-per-sample-vcfs-into-a-population-vcf)
-- [9. Run time](#8-run-time)
+- [9. Run time](#9-run-time)
 
 ## 1. SV discovery using multiple methods
 
