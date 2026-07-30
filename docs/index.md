@@ -12,14 +12,9 @@ A toolkit to harmonize and filter structural variations across methods and sampl
 
 ## Installation
 
-Clone the repository:
-``` bash
-git clone https://github.com/Han-Cao/HarmoniSV.git
-```
-
 Make sure you have Python 3.8+ and pip installed. Then, install the tool and its dependencies:
 ``` bash
-pip install .
+pip install HarmoniSV
 ```
 
 ## Quick start
@@ -27,7 +22,7 @@ pip install .
 harmonisv
 
 HarmoniSV: A toolkit to harmonize and filter structural variantions across methods and samples
-Version: 0.1.0
+Version: 0.1.1
 
 Usage: harmonisv <command> [options]
 
