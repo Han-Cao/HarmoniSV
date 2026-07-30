@@ -7,11 +7,11 @@
 # Author: Han Cao
 # Contact: hcaoad@connect.ust.hk
 
-VERSION = "0.1.0"
-
 import argparse
 import logging
 import sys
+
+from harmoniSV import __version__ as VERSION
 
 COMMAND_LIST = ['harmonize', 'harmonize-header', 'represent', 'genotype', 'filter', 'sample2pop', 'intersect', 'concordance']
 
