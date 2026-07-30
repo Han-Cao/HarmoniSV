@@ -1,4 +1,8 @@
 # HarmoniSV
+
+![PyPI Version](https://img.shields.io/pypi/v/HarmoniSV)
+
+
 A toolkit to harmonize and filter structural variations across methods and samples.
 
 - [Features](#features)
@@ -24,7 +28,7 @@ pip install HarmoniSV
 harmonisv
 
 HarmoniSV: A toolkit to harmonize and filter structural variantions across methods and samples
-Version: 0.1.0
+Version: 0.1.1
 
 Usage: harmonisv <command> [options]
 
